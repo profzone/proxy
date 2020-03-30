@@ -1,0 +1,11 @@
+name: proxy
+group: longhorn
+owner: profzone
+version: 0.0.0
+description: proxy
+program_language: golang
+workflow:
+  extends: feature-pr
+scripts:
+  build: go build -v -o ./build/$PROJECT_NAME ./cmd
+  test: go test
