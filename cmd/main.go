@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/profzone/eden-framework/pkg/application"
+	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/gateway"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/modules"
@@ -16,6 +17,14 @@ func main() {
 		if err != nil {
 			return err
 		}
+		logrus.Infof("database shutdown.")
+
+		err = global.Config.APIServer.Close()
+		if err != nil {
+			return err
+		}
+		logrus.Infof("api server shutdown.")
+
 		return nil
 	})
 }
@@ -29,12 +38,12 @@ func runner(app *application.Application) error {
 	go global.Config.HTTPServer.Serve(routers.RootRouter)
 
 	// start gateway server
-	apiServ := gateway.CreateAPIServer(gateway.APIServerConf{
+	global.Config.APIServer = gateway.CreateAPIServer(gateway.APIServerConf{
 		ListenAddr:      global.Config.ListenAddr,
 		ReadTimeout:     global.Config.ReadTimeout,
 		WriteTimeout:    global.Config.WriteTimeout,
 		ReadBufferSize:  global.Config.ReadBufferSize,
 		WriteBufferSize: global.Config.WriteBufferSize,
 	})
-	return apiServ.Start()
+	return global.Config.APIServer.Start()
 }

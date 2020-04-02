@@ -4,6 +4,7 @@ import (
 	"github.com/profzone/eden-framework/pkg/courier/transport_grpc"
 	"github.com/profzone/eden-framework/pkg/courier/transport_http"
 	"longhorn/proxy/internal/constants/enum"
+	"longhorn/proxy/internal/gateway"
 	"time"
 )
 
@@ -27,6 +28,7 @@ var Config = struct {
 	HTTPServer transport_http.ServeHTTP
 
 	// proxying
+	APIServer       *gateway.APIServer `ignored:"true"`
 	ListenAddr      string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
@@ -46,7 +48,6 @@ var Config = struct {
 		Port:     8000,
 		WithCORS: true,
 	},
-
 
 	ListenAddr:      "0.0.0.0:8000",
 	ReadTimeout:     30 * time.Second,
