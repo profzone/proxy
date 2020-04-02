@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/profzone/eden-framework/pkg/courier"
 	"github.com/profzone/eden-framework/pkg/courier/httpx"
+	"longhorn/proxy/internal/modules"
 )
 
 func init() {
@@ -13,6 +14,11 @@ func init() {
 // 创建集群
 type CreateCluster struct {
 	httpx.MethodPost
+	Body modules.Cluster `name:"body" in:"body"`
+}
+
+type CreateClusterResult struct {
+	//
 }
 
 func (req CreateCluster) Path() string {
@@ -20,5 +26,11 @@ func (req CreateCluster) Path() string {
 }
 
 func (req CreateCluster) Output(ctx context.Context) (result interface{}, err error) {
-	panic("implement me")
+	id, err := modules.CreateCluster(&req.Body, modules.Database)
+	if err != nil {
+		return
+	}
+
+	result = id
+	return
 }

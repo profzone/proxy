@@ -30,12 +30,12 @@ replace (
 )
 
 require (
+	github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473 // indirect
 	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/profzone/eden-framework v0.0.0-20200107094924-5879c460b9aa
+	github.com/sirupsen/logrus v1.4.2
 	github.com/valyala/fasthttp v1.9.0
-	go.etcd.io/etcd v0.0.0-20200319002442-e784ba73c229 // indirect
+	go.etcd.io/etcd v0.0.0-20200319002442-e784ba73c229
 	go.uber.org/zap v1.14.1 // indirect
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
-	google.golang.org/genproto v0.0.0-20200326112834-f447254575fd // indirect
-	google.golang.org/grpc v1.28.0 // indirect
 )

@@ -28,6 +28,10 @@ func (s *APIServer) Start() error {
 	return s.startHTTP()
 }
 
+func (s *APIServer) Close() error {
+	return s.server.Shutdown()
+}
+
 func (s *APIServer) startHTTP() error {
 	s.server = &fasthttp.Server{
 		Handler:         s.HandleHTTP,
