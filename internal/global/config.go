@@ -45,7 +45,7 @@ var Config = struct {
 		Port: 8900,
 	},
 	HTTPServer: transport_http.ServeHTTP{
-		Port:     8000,
+		Port:     8001,
 		WithCORS: true,
 	},
 

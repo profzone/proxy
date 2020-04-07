@@ -18,7 +18,8 @@ type CreateCluster struct {
 }
 
 type CreateClusterResult struct {
-	//
+	// 集群ID
+	ID uint64 `json:"id"`
 }
 
 func (req CreateCluster) Path() string {
@@ -31,6 +32,6 @@ func (req CreateCluster) Output(ctx context.Context) (result interface{}, err er
 		return
 	}
 
-	result = id
+	result = &CreateClusterResult{ID: id}
 	return
 }

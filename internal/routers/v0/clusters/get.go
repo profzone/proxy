@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/profzone/eden-framework/pkg/courier"
 	"github.com/profzone/eden-framework/pkg/courier/httpx"
+	"longhorn/proxy/internal/modules"
 )
 
 func init() {
@@ -22,5 +23,11 @@ func (req GetCluster) Path() string {
 }
 
 func (req GetCluster) Output(ctx context.Context) (result interface{}, err error) {
-	panic("implement me")
+	cluster, err := modules.GetCluster(req.ID, modules.Database)
+	if err != nil {
+		return
+	}
+
+	result = cluster
+	return
 }

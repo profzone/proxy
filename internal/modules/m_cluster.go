@@ -27,7 +27,7 @@ func (v Cluster) Marshal() (result []byte, err error) {
 	buf := bytes.NewBuffer(result)
 	enc := gob.NewEncoder(buf)
 	err = enc.Encode(v)
-	return
+	return buf.Bytes(), err
 }
 
 func (v *Cluster) Unmarshal(data []byte) (err error) {
