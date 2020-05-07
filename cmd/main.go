@@ -5,15 +5,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/gateway"
 	"longhorn/proxy/internal/global"
-	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/routers"
+	"longhorn/proxy/internal/storage"
 )
 
 func main() {
 	app := application.NewApplication(runner, &global.Config)
 	go app.Start()
 	app.WaitStop(func() error {
-		err := modules.Database.Close()
+		err := storage.Database.Close()
 		if err != nil {
 			return err
 		}
@@ -31,7 +31,7 @@ func main() {
 
 func runner(app *application.Application) error {
 	// init database
-	modules.Database.Init(global.Config.DBConfig, global.Config.SnowflakeConfig)
+	storage.Database.Init(global.Config.DBConfig, global.Config.SnowflakeConfig)
 
 	// start administrator server
 	go global.Config.GRPCServer.Serve(routers.RootRouter)

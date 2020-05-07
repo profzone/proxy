@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"longhorn/proxy/internal/constants/enum"
+	"longhorn/proxy/internal/storage"
 )
 
 type Cluster struct {
@@ -37,27 +38,29 @@ func (v *Cluster) Unmarshal(data []byte) (err error) {
 	return
 }
 
-func CreateCluster(c *Cluster, db DB) (id uint64, err error) {
-	id, err = db.CreateCluster(c)
+func CreateCluster(c *Cluster, db storage.DB) (id uint64, err error) {
+	id, err = db.Create(c)
 	return
 }
 
-func GetCluster(id uint64, db DB) (c *Cluster, err error) {
-	c, err = db.GetCluster(id)
+func GetCluster(id uint64, db storage.DB) (c *Cluster, err error) {
+	err = db.Get(id, c)
 	return
 }
 
-func GetClusters(db DB) (c []*Cluster, err error) {
-	c, err = db.GetClusters()
+func WalkClusters(start, limit int64, walking func(e storage.Element) error, db storage.DB) (count int64, err error) {
+	count, err = db.Walk(start, limit, func() storage.Element {
+		return &Cluster{}
+	}, walking)
 	return
 }
 
-func UpdateCluster(c *Cluster, db DB) (err error) {
-	err = db.UpdateCluster(c)
+func UpdateCluster(c *Cluster, db storage.DB) (err error) {
+	err = db.Update(c)
 	return
 }
 
-func DeleteCluster(id uint64, db DB) (err error) {
-	err = db.DeleteCluster(id)
+func DeleteCluster(id uint64, db storage.DB) (err error) {
+	err = db.Delete(id)
 	return
 }

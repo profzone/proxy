@@ -1,10 +1,11 @@
-package modules
+package storage
 
 import (
 	"context"
 	"fmt"
 	"go.etcd.io/etcd/clientv3"
 	"longhorn/proxy/internal/global"
+	"longhorn/proxy/internal/pkg"
 	"math"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 type DBEtcd struct {
 	sync.RWMutex
 
-	client *clientv3.Client
+	client   *clientv3.Client
 	kvClient clientv3.KV
 
 	globalPrefix  string
@@ -21,7 +22,39 @@ type DBEtcd struct {
 	idPrefix      string
 
 	idLock      sync.Mutex
-	idGenerator *GeneratorSnowFlake
+	idGenerator *pkg.GeneratorSnowFlake
+}
+
+func (d *DBEtcd) Create(e Element) (uint64, error) {
+	d.Lock()
+	defer d.Unlock()
+
+	return d.putElement(d.clusterPrefix, e)
+}
+
+func (d *DBEtcd) Update(e Element) error {
+	panic("implement me")
+}
+
+func (d *DBEtcd) Delete(id uint64) error {
+	panic("implement me")
+}
+
+func (d *DBEtcd) Get(id uint64, target Element) error {
+	d.RLock()
+	defer d.RUnlock()
+
+	err := d.getElement(d.clusterPrefix, id, target)
+	return err
+}
+
+func (d *DBEtcd) Walk(start, limit int64, elementFactory func() Element, walking func(e Element) error) (int64, error) {
+	d.RLock()
+	defer d.RUnlock()
+
+	nextStart, err := d.getElements(d.clusterPrefix, start, limit, elementFactory, walking)
+
+	return nextStart, err
 }
 
 func (d *DBEtcd) Close() error {
@@ -33,7 +66,7 @@ func NewDBEtcd(endpoints []string, prefix string, idConfig global.SnowflakeConfi
 		globalPrefix:  prefix,
 		clusterPrefix: fmt.Sprintf("%s/clusters", prefix),
 
-		idGenerator: NewSnowflake(idConfig),
+		idGenerator: pkg.NewSnowflake(idConfig),
 	}
 	err := db.init(endpoints)
 
@@ -53,78 +86,24 @@ func (d *DBEtcd) init(endpoints []string) (err error) {
 	return
 }
 
-func (d *DBEtcd) CreateCluster(c *Cluster) (uint64, error) {
-	d.Lock()
-	defer d.Unlock()
-
-	return d.putElement(d.clusterPrefix, c)
-}
-
-func (d *DBEtcd) GetCluster(id uint64) (*Cluster, error) {
-	d.RLock()
-	defer d.RUnlock()
-
-	c := &Cluster{}
-	err := d.getElement(d.clusterPrefix, id, c)
-	return c, err
-}
-
-func (d *DBEtcd) GetClusters() ([]*Cluster, error) {
-	d.RLock()
-	defer d.RUnlock()
-
-	clusters := make([]*Cluster, 0)
-	_, err := d.getElements(d.clusterPrefix, -1, 10, func() Element {
-		return &Cluster{}
-	}, func(element Element) error {
-		v, ok := element.(*Cluster)
-		if !ok {
-			return fmt.Errorf("element is not a *Cluster")
-		}
-		clusters = append(clusters, v)
-		return nil
-	})
-
-	return clusters, err
-}
-
-func (d *DBEtcd) WalkClusters(start int64, limit int64, walking func(element Element) error) (int64, error) {
-	d.RLock()
-	defer d.RUnlock()
-
-	nextStart, err := d.getElements(d.clusterPrefix, start, limit, func() Element {
-		return &Cluster{}
-	}, walking)
-
-	return nextStart, err
-}
-
-func (d *DBEtcd) UpdateCluster(c *Cluster) error {
-	panic("implement me")
-}
-
-func (d *DBEtcd) DeleteCluster(id uint64) error {
-	panic("implement me")
-}
-
 func (d *DBEtcd) getKey(prefix string, id uint64) string {
 	return fmt.Sprintf("%s/%d", prefix, id)
 }
 
 func (d *DBEtcd) withTxn() (clientv3.Txn, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(d.client.Ctx(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(d.client.Ctx(), 10*time.Second)
 	return d.kvClient.Txn(ctx), cancel
 }
 
 func (d *DBEtcd) getResponse(key string, options ...clientv3.OpOption) (*clientv3.GetResponse, error) {
-	ctx, cancel := context.WithTimeout(d.client.Ctx(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(d.client.Ctx(), 10*time.Second)
 	defer cancel()
 
 	return d.kvClient.Get(ctx, key, options...)
 }
 
 func (d *DBEtcd) get(key string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(d.client.Ctx(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(d.client.Ctx(), 10*time.Second)
 	defer cancel()
 
 	resp, err := d.kvClient.Get(ctx, key)
