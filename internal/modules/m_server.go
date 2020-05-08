@@ -9,8 +9,8 @@ import (
 
 type Server struct {
 	// 唯一标识
-	ID uint64 `json:"id" default:""`
-	// 集群名称
+	ID uint64 `json:"id,string" default:""`
+	// 服务器名称
 	Name string `json:"name"`
 	// 地址
 	Host string `json:"host"`

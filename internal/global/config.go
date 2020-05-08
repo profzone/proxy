@@ -33,7 +33,7 @@ var Config = struct {
 	HTTPServer transport_http.ServeHTTP
 
 	// proxying
-	APIServer       *gateway.APIServer `ignored:"true"`
+	APIServer       *gateway.ReverseProxy `ignored:"true"`
 	ListenAddr      string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration

@@ -38,7 +38,7 @@ func runner(app *application.Application) error {
 	go global.Config.HTTPServer.Serve(routers.RootRouter)
 
 	// start gateway server
-	global.Config.APIServer = gateway.CreateAPIServer(gateway.APIServerConf{
+	global.Config.APIServer = gateway.CreateReverseProxy(gateway.ReverseProxyConf{
 		ListenAddr:      global.Config.ListenAddr,
 		ReadTimeout:     global.Config.ReadTimeout,
 		WriteTimeout:    global.Config.WriteTimeout,

@@ -12,10 +12,6 @@ type Organization struct {
 	ID uint64 `json:"id" default:""`
 	// 集群名称
 	Name string `json:"name"`
-	// 地址
-	Host string `json:"host"`
-	// 端口
-	Port uint16 `json:"port"`
 }
 
 func (v *Organization) SetIdentity(id uint64) {

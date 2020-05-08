@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 )
@@ -12,10 +13,16 @@ type API struct {
 	ID uint64 `json:"id" default:""`
 	// 集群名称
 	Name string `json:"name"`
-	// 地址
-	Host string `json:"host"`
+	// 接口URL匹配模式
+	URLPattern string `json:"urlPattern"`
+	// 接口匹配方法
+	Method string `json:"method"`
 	// 端口
-	Port uint16 `json:"port"`
+	Status enum.ApiStatus `json:"status"`
+	// IPControl
+	// Routers
+	// Qps
+	// Fuse
 }
 
 func (v *API) SetIdentity(id uint64) {

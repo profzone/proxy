@@ -10,7 +10,7 @@ import (
 
 type Cluster struct {
 	// 唯一标识
-	ID uint64 `json:"id" default:""`
+	ID uint64 `json:"id,string" default:""`
 	// 集群名称
 	Name string `json:"name"`
 	// 负载均衡类型
