@@ -17,9 +17,14 @@ type SnowflakeConfig struct {
 }
 
 type DBConfig struct {
-	DBType    enum.DbType
-	Endpoints []string
-	Prefix    string
+	DBType             enum.DbType
+	Endpoints          []string
+	Prefix             string
+	ClusterPrefix      string
+	ServerPrefix       string
+	ApiPrefix          string
+	RouterPrefix       string
+	OrganizationPrefix string
 }
 
 var Config = struct {
@@ -56,9 +61,14 @@ var Config = struct {
 	WriteBufferSize: 0,
 
 	DBConfig: DBConfig{
-		DBType:    enum.DB_TYPE__ETCD,
-		Endpoints: []string{"127.0.0.1:2379"},
-		Prefix:    "proxy",
+		DBType:             enum.DB_TYPE__ETCD,
+		Endpoints:          []string{"127.0.0.1:2379"},
+		Prefix:             "proxy",
+		ClusterPrefix:      "proxy/clusters",
+		ServerPrefix:       "proxy/ids",
+		ApiPrefix:          "proxy/apis",
+		RouterPrefix:       "proxy/routers",
+		OrganizationPrefix: "proxy/organizations",
 	},
 
 	SnowflakeConfig: SnowflakeConfig{

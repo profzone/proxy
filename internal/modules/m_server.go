@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 )
 
@@ -39,29 +40,29 @@ func (v *Server) Unmarshal(data []byte) (err error) {
 	return
 }
 
-func CreateServer(c *Server, db storage.DB) (id uint64, err error) {
-	id, err = db.Create(c)
+func CreateServer(c *Server, db storage.Storage) (id uint64, err error) {
+	id, err = db.Create(global.Config.ServerPrefix, c)
 	return
 }
 
-func GetServer(id uint64, db storage.DB) (c *Server, err error) {
-	err = db.Get(id, c)
+func GetServer(id uint64, db storage.Storage) (c *Server, err error) {
+	err = db.Get(global.Config.ServerPrefix, id, c)
 	return
 }
 
-func WalkServers(start, limit int64, walking func(e storage.Element) error, db storage.DB) (count int64, err error) {
-	count, err = db.Walk(start, limit, func() storage.Element {
+func WalkServers(start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
+	nextID, err = db.Walk(global.Config.ServerPrefix, start, limit, func() storage.Element {
 		return &Server{}
 	}, walking)
 	return
 }
 
-func UpdateServer(c *Server, db storage.DB) (err error) {
-	err = db.Update(c)
+func UpdateServer(c *Server, db storage.Storage) (err error) {
+	err = db.Update(global.Config.ServerPrefix, c)
 	return
 }
 
-func DeleteServer(id uint64, db storage.DB) (err error) {
-	err = db.Delete(id)
+func DeleteServer(id uint64, db storage.Storage) (err error) {
+	err = db.Delete(global.Config.ServerPrefix, id)
 	return
 }

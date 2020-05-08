@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 )
 
@@ -39,29 +40,29 @@ func (v *Router) Unmarshal(data []byte) (err error) {
 	return
 }
 
-func CreateRouter(c *Router, db storage.DB) (id uint64, err error) {
-	id, err = db.Create(c)
+func CreateRouter(c *Router, db storage.Storage) (id uint64, err error) {
+	id, err = db.Create(global.Config.RouterPrefix, c)
 	return
 }
 
-func GetRouter(id uint64, db storage.DB) (c *API, err error) {
-	err = db.Get(id, c)
+func GetRouter(id uint64, db storage.Storage) (c *API, err error) {
+	err = db.Get(global.Config.RouterPrefix, id, c)
 	return
 }
 
-func WalkRouters(start, limit int64, walking func(e storage.Element) error, db storage.DB) (count int64, err error) {
-	count, err = db.Walk(start, limit, func() storage.Element {
+func WalkRouters(start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
+	nextID, err = db.Walk(global.Config.RouterPrefix, start, limit, func() storage.Element {
 		return &Router{}
 	}, walking)
 	return
 }
 
-func UpdateRouter(c *API, db storage.DB) (err error) {
-	err = db.Update(c)
+func UpdateRouter(c *API, db storage.Storage) (err error) {
+	err = db.Update(global.Config.RouterPrefix, c)
 	return
 }
 
-func DeleteRouter(id uint64, db storage.DB) (err error) {
-	err = db.Delete(id)
+func DeleteRouter(id uint64, db storage.Storage) (err error) {
+	err = db.Delete(global.Config.RouterPrefix, id)
 	return
 }

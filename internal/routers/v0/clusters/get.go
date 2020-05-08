@@ -16,7 +16,7 @@ func init() {
 type GetCluster struct {
 	httpx.MethodGet
 
-	ID uint64 `name:"id" in:"path"`
+	ID uint64 `name:"id,string" in:"path"`
 }
 
 func (req GetCluster) Path() string {
