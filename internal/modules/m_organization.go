@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 )
@@ -59,6 +60,6 @@ func UpdateOrganization(c *Organization, db storage.Storage) (err error) {
 }
 
 func DeleteOrganization(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.OrganizationPrefix, id)
+	err = db.Delete(global.Config.OrganizationPrefix, fmt.Sprintf("%d", id))
 	return
 }

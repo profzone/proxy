@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 )
@@ -63,6 +64,6 @@ func UpdateServer(c *Server, db storage.Storage) (err error) {
 }
 
 func DeleteServer(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ServerPrefix, id)
+	err = db.Delete(global.Config.ServerPrefix, fmt.Sprintf("%d", id))
 	return
 }

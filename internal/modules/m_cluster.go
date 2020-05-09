@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
@@ -63,6 +64,6 @@ func UpdateCluster(c *Cluster, db storage.Storage) (err error) {
 }
 
 func DeleteCluster(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ClusterPrefix, id)
+	err = db.Delete(global.Config.ClusterPrefix, fmt.Sprintf("%d", id))
 	return
 }

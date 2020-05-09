@@ -22,6 +22,7 @@ type DBConfig struct {
 	Prefix             string
 	ClusterPrefix      string
 	ServerPrefix       string
+	BindPrefix         string
 	ApiPrefix          string
 	RouterPrefix       string
 	OrganizationPrefix string
@@ -65,7 +66,8 @@ var Config = struct {
 		Endpoints:          []string{"127.0.0.1:2379"},
 		Prefix:             "proxy",
 		ClusterPrefix:      "proxy/clusters",
-		ServerPrefix:       "proxy/ids",
+		ServerPrefix:       "proxy/servers",
+		BindPrefix:         "proxy/binds",
 		ApiPrefix:          "proxy/apis",
 		RouterPrefix:       "proxy/routers",
 		OrganizationPrefix: "proxy/organizations",

@@ -36,7 +36,7 @@ func (s *StorageEtcd) Update(prefix string, e Element) error {
 	return err
 }
 
-func (s *StorageEtcd) Delete(prefix string, id uint64) error {
+func (s *StorageEtcd) Delete(prefix string, id string) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -88,6 +88,10 @@ func (s *StorageEtcd) init(endpoints []string) (err error) {
 
 func (s *StorageEtcd) getKey(prefix string, id uint64) string {
 	return fmt.Sprintf("%s/%d", prefix, id)
+}
+
+func (s *StorageEtcd) getUnionKey(prefix string, unionID string) string {
+	return fmt.Sprintf("%s/%s", prefix, unionID)
 }
 
 func (s *StorageEtcd) withTxn() (clientv3.Txn, context.CancelFunc) {
@@ -181,12 +185,19 @@ func (s *StorageEtcd) put(key, value string, options ...clientv3.OpOption) error
 }
 
 func (s *StorageEtcd) putElement(prefix string, value Element) (uint64, error) {
-	if value.GetIdentity() == 0 {
-		id, err := s.idGenerator.GenerateUniqueID()
-		if err != nil {
-			return 0, err
+	union, ok := value.(UnionElement)
+	var key string
+	if !ok {
+		if value.GetIdentity() == 0 {
+			id, err := s.idGenerator.GenerateUniqueID()
+			if err != nil {
+				return 0, err
+			}
+			value.SetIdentity(id)
 		}
-		value.SetIdentity(id)
+		key = s.getKey(prefix, value.GetIdentity())
+	} else {
+		key = s.getUnionKey(prefix, union.GetUnionIdentity())
 	}
 
 	data, err := value.Marshal()
@@ -194,7 +205,7 @@ func (s *StorageEtcd) putElement(prefix string, value Element) (uint64, error) {
 		return 0, err
 	}
 
-	return value.GetIdentity(), s.put(s.getKey(prefix, value.GetIdentity()), string(data))
+	return value.GetIdentity(), s.put(key, string(data))
 }
 
 func (s *StorageEtcd) delete(key string, options ...clientv3.OpOption) error {
@@ -204,7 +215,7 @@ func (s *StorageEtcd) delete(key string, options ...clientv3.OpOption) error {
 	return err
 }
 
-func (s *StorageEtcd) deleteElement(prefix string, id uint64) error {
-	err := s.delete(s.getKey(prefix, id))
+func (s *StorageEtcd) deleteElement(prefix string, id string) error {
+	err := s.delete(s.getUnionKey(prefix, id))
 	return err
 }

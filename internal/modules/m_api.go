@@ -3,6 +3,7 @@ package modules
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
@@ -16,13 +17,14 @@ type API struct {
 	// 接口URL匹配模式
 	URLPattern string `json:"urlPattern"`
 	// 接口匹配方法
-	Method string `json:"method"`
-	// 端口
-	Status enum.ApiStatus `json:"status"`
+	Method string `json:"method" default:""`
+	// 接口状态
+	Status enum.ApiStatus `json:"status" default:"UP"`
 	// IPControl
-	// Routers
 	// Qps
 	// Fuse
+	// 反向代理调度
+	Dispatchers []Dispatcher `json:"dispatcher"`
 }
 
 func (v *API) SetIdentity(id uint64) {
@@ -70,6 +72,6 @@ func UpdateAPI(c *API, db storage.Storage) (err error) {
 }
 
 func DeleteAPI(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ApiPrefix, id)
+	err = db.Delete(global.Config.ApiPrefix, fmt.Sprintf("%d", id))
 	return
 }

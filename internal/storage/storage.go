@@ -10,7 +10,7 @@ type Storage interface {
 	Close() error
 	Create(prefix string, e Element) (uint64, error)
 	Update(prefix string, e Element) error
-	Delete(prefix string, id uint64) error
+	Delete(prefix string, id string) error
 	Get(prefix string, id uint64, target Element) error
 	Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error)
 }
@@ -20,6 +20,11 @@ type Element interface {
 	Unmarshal([]byte) error
 	GetIdentity() uint64
 	SetIdentity(uint64)
+}
+
+type UnionElement interface {
+	Element
+	GetUnionIdentity() string
 }
 
 var Database = &Delegate{}
@@ -36,7 +41,7 @@ func (d *Delegate) Update(prefix string, e Element) error {
 	return d.driver.Update(prefix, e)
 }
 
-func (d *Delegate) Delete(prefix string, id uint64) error {
+func (d *Delegate) Delete(prefix string, id string) error {
 	return d.driver.Delete(prefix, id)
 }
 
