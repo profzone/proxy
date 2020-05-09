@@ -3,9 +3,13 @@ package gateway
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/internal/modules"
+	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/route"
 	"time"
 )
+
+var APIServer *ReverseProxy
 
 type ReverseProxyConf struct {
 	ListenAddr      string
@@ -17,23 +21,36 @@ type ReverseProxyConf struct {
 
 type ReverseProxy struct {
 	server *fasthttp.Server
-	routes *route.Routes
+	Routes *route.Routes
 	ReverseProxyConf
 }
 
 func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
 	return &ReverseProxy{
 		ReverseProxyConf: conf,
-		routes:           route.NewRoutes(),
+		Routes:           route.NewRoutes(),
 	}
 }
 
 func (s *ReverseProxy) Start() error {
+	err := s.initRoutes()
+	if err != nil {
+		return err
+	}
 	return s.startHTTP()
 }
 
 func (s *ReverseProxy) Close() error {
 	return s.server.Shutdown()
+}
+
+func (s *ReverseProxy) initRoutes() error {
+	_, err := modules.WalkAPIs(0, -1, func(e storage.Element) error {
+		a := e.(*modules.API)
+		s.Routes.Handle(a.Method, a.URLPattern, a.ID)
+		return nil
+	}, storage.Database)
+	return err
 }
 
 func (s *ReverseProxy) startHTTP() error {
@@ -51,12 +68,13 @@ func (s *ReverseProxy) startHTTP() error {
 func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	path := string(ctx.Path())
 	method := string(ctx.Method())
-	logrus.Debug(method, path)
-	apiID, params, exist := s.routes.Lookup(method, path)
-	if !exist {
-		logrus.Errorf("[%s] %s not exist", method, path)
+	apiID, params, _ := s.Routes.Lookup(method, path)
+	if apiID == 0 {
+		// TODO generate error message
+		logrus.Debugf("[%s] %s not exist", method, path)
+		return
 	}
-	logrus.Infof("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
+	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 }
 
 func (s *ReverseProxy) HandleHTTPError(ctx *fasthttp.RequestCtx, err error) {

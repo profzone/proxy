@@ -4,7 +4,6 @@ import (
 	"github.com/profzone/eden-framework/pkg/courier/transport_grpc"
 	"github.com/profzone/eden-framework/pkg/courier/transport_http"
 	"longhorn/proxy/internal/constants/enum"
-	"longhorn/proxy/internal/gateway"
 	"time"
 )
 
@@ -34,7 +33,6 @@ var Config = struct {
 	HTTPServer transport_http.ServeHTTP
 
 	// proxying
-	APIServer       *gateway.ReverseProxy `ignored:"true"`
 	ListenAddr      string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration

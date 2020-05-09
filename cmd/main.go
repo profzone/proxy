@@ -19,7 +19,7 @@ func main() {
 		}
 		logrus.Infof("database shutdown.")
 
-		err = global.Config.APIServer.Close()
+		err = gateway.APIServer.Close()
 		if err != nil {
 			return err
 		}
@@ -38,12 +38,12 @@ func runner(app *application.Application) error {
 	go global.Config.HTTPServer.Serve(routers.RootRouter)
 
 	// start gateway server
-	global.Config.APIServer = gateway.CreateReverseProxy(gateway.ReverseProxyConf{
+	gateway.APIServer = gateway.CreateReverseProxy(gateway.ReverseProxyConf{
 		ListenAddr:      global.Config.ListenAddr,
 		ReadTimeout:     global.Config.ReadTimeout,
 		WriteTimeout:    global.Config.WriteTimeout,
 		ReadBufferSize:  global.Config.ReadBufferSize,
 		WriteBufferSize: global.Config.WriteBufferSize,
 	})
-	return global.Config.APIServer.Start()
+	return gateway.APIServer.Start()
 }

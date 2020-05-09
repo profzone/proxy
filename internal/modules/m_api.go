@@ -12,7 +12,7 @@ import (
 type API struct {
 	// 唯一标识
 	ID uint64 `json:"id" default:""`
-	// 集群名称
+	// 接口名称
 	Name string `json:"name"`
 	// 接口URL匹配模式
 	URLPattern string `json:"urlPattern"`

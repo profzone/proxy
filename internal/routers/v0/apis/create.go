@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/profzone/eden-framework/pkg/courier"
 	"github.com/profzone/eden-framework/pkg/courier/httpx"
+	"longhorn/proxy/internal/gateway"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/http"
@@ -32,5 +33,7 @@ func (req CreateApi) Output(ctx context.Context) (result interface{}, err error)
 	result = http.IDResponse{
 		ID: id,
 	}
+
+	gateway.APIServer.Routes.Handle(req.Body.Method, req.Body.URLPattern, id)
 	return
 }
