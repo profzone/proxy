@@ -6,6 +6,7 @@ import (
 	"github.com/profzone/eden-framework/pkg/courier/httpx"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/pkg/http"
 )
 
 func init() {
@@ -18,11 +19,6 @@ type CreateCluster struct {
 	Body modules.Cluster `name:"body" in:"body"`
 }
 
-type CreateClusterResult struct {
-	// 集群ID
-	ID uint64 `json:"id"`
-}
-
 func (req CreateCluster) Path() string {
 	return ""
 }
@@ -33,6 +29,6 @@ func (req CreateCluster) Output(ctx context.Context) (result interface{}, err er
 		return
 	}
 
-	result = &CreateClusterResult{ID: id}
+	result = &http.IDResponse{ID: id}
 	return
 }

@@ -1,7 +1,9 @@
 package gateway
 
 import (
+	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/pkg/route"
 	"time"
 )
 
@@ -15,12 +17,14 @@ type ReverseProxyConf struct {
 
 type ReverseProxy struct {
 	server *fasthttp.Server
+	routes *route.Routes
 	ReverseProxyConf
 }
 
 func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
 	return &ReverseProxy{
 		ReverseProxyConf: conf,
+		routes:           route.NewRoutes(),
 	}
 }
 
@@ -45,9 +49,14 @@ func (s *ReverseProxy) startHTTP() error {
 }
 
 func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
-	req := ctx.Request
-	req.SetHost("127.0.0.1:8001")
-	fasthttp.Do(&req, &ctx.Response)
+	path := string(ctx.Path())
+	method := string(ctx.Method())
+	logrus.Debug(method, path)
+	apiID, params, exist := s.routes.Lookup(method, path)
+	if !exist {
+		logrus.Errorf("[%s] %s not exist", method, path)
+	}
+	logrus.Infof("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 }
 
 func (s *ReverseProxy) HandleHTTPError(ctx *fasthttp.RequestCtx, err error) {
