@@ -57,10 +57,10 @@ func (d *Delegate) Close() error {
 	return d.driver.Close()
 }
 
-func (d *Delegate) Init(dbConfig global.DBConfig, idConfig global.SnowflakeConfig) {
+func (d *Delegate) Init(dbConfig global.DBConfig) {
 	var err error
 	if dbConfig.DBType == enum.DB_TYPE__ETCD {
-		d.driver, err = NewDBEtcd(dbConfig.Endpoints, idConfig)
+		d.driver, err = NewDBEtcd(dbConfig.Endpoints)
 	}
 
 	if err != nil {

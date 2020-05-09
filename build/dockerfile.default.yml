@@ -28,12 +28,12 @@ env:
   PROXY_ORGANIZATIONPREFIX: proxy/organizations
   PROXY_PREFIX: proxy
   PROXY_READBUFFERSIZE: "0"
-  PROXY_READTIMEOUT: 30s
+  PROXY_READTIMEOUT: 10s
   PROXY_ROUTERPREFIX: proxy/routers
   PROXY_SERVERPREFIX: proxy/servers
   PROXY_STEPBITS: "12"
   PROXY_WRITEBUFFERSIZE: "0"
-  PROXY_WRITETIMEOUT: 1m0s
+  PROXY_WRITETIMEOUT: 30s
 add:
   ./api/api.json: ./
   ./build/configs: ./configs

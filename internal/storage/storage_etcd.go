@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"go.etcd.io/etcd/clientv3"
-	"longhorn/proxy/internal/global"
-	"longhorn/proxy/pkg"
 	"math"
 	"sync"
 	"time"
@@ -17,8 +15,7 @@ type StorageEtcd struct {
 	client   *clientv3.Client
 	kvClient clientv3.KV
 
-	idLock      sync.Mutex
-	idGenerator *pkg.GeneratorSnowFlake
+	idLock sync.Mutex
 }
 
 func (s *StorageEtcd) Create(prefix string, e Element) (uint64, error) {
@@ -64,10 +61,8 @@ func (s *StorageEtcd) Close() error {
 	return s.client.Close()
 }
 
-func NewDBEtcd(endpoints []string, idConfig global.SnowflakeConfig) (*StorageEtcd, error) {
-	db := &StorageEtcd{
-		idGenerator: pkg.NewSnowflake(idConfig),
-	}
+func NewDBEtcd(endpoints []string) (*StorageEtcd, error) {
+	db := &StorageEtcd{}
 	err := db.init(endpoints)
 
 	return db, err
@@ -189,11 +184,7 @@ func (s *StorageEtcd) putElement(prefix string, value Element) (uint64, error) {
 	var key string
 	if !ok {
 		if value.GetIdentity() == 0 {
-			id, err := s.idGenerator.GenerateUniqueID()
-			if err != nil {
-				return 0, err
-			}
-			value.SetIdentity(id)
+			return 0, fmt.Errorf("must set identity")
 		}
 		key = s.getKey(prefix, value.GetIdentity())
 	} else {

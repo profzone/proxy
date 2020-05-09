@@ -36,7 +36,7 @@ func (req GetApis) Output(ctx context.Context) (result interface{}, err error) {
 		Data:   make([]modules.API, 0),
 	}
 
-	resp.NextID, err = modules.WalkClusters(req.Start, req.Limit, func(e storage.Element) error {
+	resp.NextID, err = modules.WalkAPIs(req.Start, req.Limit, func(e storage.Element) error {
 		resp.Data = append(resp.Data, *e.(*modules.API))
 		return nil
 	}, storage.Database)

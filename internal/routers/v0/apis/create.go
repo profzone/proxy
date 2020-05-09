@@ -7,6 +7,7 @@ import (
 	"longhorn/proxy/internal/gateway"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/pkg"
 	"longhorn/proxy/pkg/http"
 )
 
@@ -25,7 +26,18 @@ func (req CreateApi) Path() string {
 }
 
 func (req CreateApi) Output(ctx context.Context) (result interface{}, err error) {
-	id, err := modules.CreateAPI(&req.Body, storage.Database)
+	id, err := pkg.Generator.GenerateUniqueID()
+	if err != nil {
+		return
+	}
+
+	req.Body.ID = id
+	err = gateway.APIServer.Routes.Handle(req.Body.Method, req.Body.URLPattern, id)
+	if err != nil {
+		return
+	}
+
+	id, err = modules.CreateAPI(&req.Body, storage.Database)
 	if err != nil {
 		return
 	}
@@ -34,6 +46,5 @@ func (req CreateApi) Output(ctx context.Context) (result interface{}, err error)
 		ID: id,
 	}
 
-	gateway.APIServer.Routes.Handle(req.Body.Method, req.Body.URLPattern, id)
 	return
 }

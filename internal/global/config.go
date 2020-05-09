@@ -54,8 +54,8 @@ var Config = struct {
 	},
 
 	ListenAddr:      "0.0.0.0:8000",
-	ReadTimeout:     30 * time.Second,
-	WriteTimeout:    60 * time.Second,
+	ReadTimeout:     10 * time.Second,
+	WriteTimeout:    30 * time.Second,
 	ReadBufferSize:  0,
 	WriteBufferSize: 0,
 

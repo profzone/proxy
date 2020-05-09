@@ -1,6 +1,7 @@
 package route
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -67,7 +68,7 @@ type node struct {
 }
 
 // Increments priority of the given child and reorders if necessary
-func (n *node) incrementChildPrio(pos int) int {
+func (n *node) incrementChildPriority(pos int) int {
 	cs := n.children
 	cs[pos].priority++
 	prio := cs[pos].priority
@@ -91,14 +92,14 @@ func (n *node) incrementChildPrio(pos int) int {
 }
 
 // addRoute adds a node with the given handle to the path.
-// Not concurrency-safe! TODO
-func (n *node) addRoute(path string, apiID uint64) {
+// Not concurrency-safe!
+func (n *node) addRoute(path string, apiID uint64) (err error) {
 	fullPath := path
 	n.priority++
 
 	// Empty tree
 	if len(n.path) == 0 && len(n.indices) == 0 {
-		n.insertChild(path, fullPath, apiID)
+		err = n.insertChild(path, fullPath, apiID)
 		n.nType = root
 		return
 	}
@@ -152,11 +153,12 @@ walk:
 						pathSeg = strings.SplitN(pathSeg, "/", 2)[0]
 					}
 					prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
-					panic("'" + pathSeg +
+					err = fmt.Errorf("'" + pathSeg +
 						"' in new path '" + fullPath +
 						"' conflicts with existing wildcard '" + n.path +
 						"' in existing prefix '" + prefix +
 						"'")
+					return
 				}
 			}
 
@@ -172,7 +174,7 @@ walk:
 			// Check if a child with the next path byte exists
 			for i, c := range []byte(n.indices) {
 				if c == idxc {
-					i = n.incrementChildPrio(i)
+					i = n.incrementChildPriority(i)
 					n = n.children[i]
 					continue walk
 				}
@@ -184,24 +186,24 @@ walk:
 				n.indices += string([]byte{idxc})
 				child := &node{}
 				n.children = append(n.children, child)
-				n.incrementChildPrio(len(n.indices) - 1)
+				n.incrementChildPriority(len(n.indices) - 1)
 				n = child
 			}
-			n.insertChild(path, fullPath, apiID)
+			err = n.insertChild(path, fullPath, apiID)
 			return
 		}
 
 		// Otherwise add handle to current node
 		if n.apiID != 0 {
-			panic("a API is already registered for path '" + fullPath + "'")
+			err = fmt.Errorf("a API is already registered for path '" + fullPath + "'")
+			return
 		}
 		n.apiID = apiID
 		return
 	}
 }
 
-//TODO
-func (n *node) insertChild(path, fullPath string, apiID uint64) {
+func (n *node) insertChild(path, fullPath string, apiID uint64) (err error) {
 	for {
 		// Find prefix until first wildcard
 		wildcard, i, valid := findWildcard(path)
@@ -211,20 +213,23 @@ func (n *node) insertChild(path, fullPath string, apiID uint64) {
 
 		// The wildcard name must not contain ':' and '*'
 		if !valid {
-			panic("only one wildcard per path segment is allowed, has: '" +
+			err = fmt.Errorf("only one wildcard per path segment is allowed, has: '" +
 				wildcard + "' in path '" + fullPath + "'")
+			return
 		}
 
 		// Check if the wildcard has a name
 		if len(wildcard) < 2 {
-			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
+			err = fmt.Errorf("wildcards must be named with a non-empty name in path '" + fullPath + "'")
+			return
 		}
 
 		// Check if this node has existing children which would be
 		// unreachable if we insert the wildcard here
 		if len(n.children) > 0 {
-			panic("wildcard segment '" + wildcard +
+			err = fmt.Errorf("wildcard segment '" + wildcard +
 				"' conflicts with existing children in path '" + fullPath + "'")
+			return
 		}
 
 		if wildcard[0] == ':' { // param
@@ -261,17 +266,20 @@ func (n *node) insertChild(path, fullPath string, apiID uint64) {
 
 		} else { // catchAll
 			if i+len(wildcard) != len(path) {
-				panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
+				err = fmt.Errorf("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
+				return
 			}
 
 			if len(n.path) > 0 && n.path[len(n.path)-1] == '/' {
-				panic("catch-all conflicts with existing handle for the path segment root in path '" + fullPath + "'")
+				err = fmt.Errorf("catch-all conflicts with existing handle for the path segment root in path '" + fullPath + "'")
+				return
 			}
 
 			// Currently fixed width 1 for '/'
 			i--
 			if path[i] != '/' {
-				panic("no / before catch-all in path '" + fullPath + "'")
+				err = fmt.Errorf("no / before catch-all in path '" + fullPath + "'")
+				return
 			}
 
 			n.path = path[:i]
@@ -302,6 +310,7 @@ func (n *node) insertChild(path, fullPath string, apiID uint64) {
 	// If no wildcard was found, simply insert the path and handle
 	n.path = path
 	n.apiID = apiID
+	return
 }
 
 // Returns the handle registered with the given path (key). The values of

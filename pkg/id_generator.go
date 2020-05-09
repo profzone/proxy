@@ -13,6 +13,8 @@ const (
 	encodeBase58Map = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
 )
 
+var Generator *GeneratorSnowFlake
+
 var decodeBase32Map [256]byte
 var decodeBase58Map [256]byte
 

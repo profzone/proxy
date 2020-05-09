@@ -37,7 +37,7 @@ func (r *Routes) putParams(ps *Params) {
 	}
 }
 
-func (r *Routes) Handle(method, path string, apiID uint64) {
+func (r *Routes) Handle(method, path string, apiID uint64) error {
 	varsCount := uint16(0)
 
 	if method == "" {
@@ -60,7 +60,10 @@ func (r *Routes) Handle(method, path string, apiID uint64) {
 		r.trees[method] = root
 	}
 
-	root.addRoute(path, apiID)
+	err := root.addRoute(path, apiID)
+	if err != nil {
+		return err
+	}
 
 	// Update maxParams
 	if paramsCount := countParams(path); paramsCount+varsCount > r.maxParams {
@@ -74,6 +77,8 @@ func (r *Routes) Handle(method, path string, apiID uint64) {
 			return &ps
 		}
 	}
+
+	return nil
 }
 
 func (r *Routes) Lookup(method, path string) (uint64, Params, bool) {

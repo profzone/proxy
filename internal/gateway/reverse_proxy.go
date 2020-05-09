@@ -47,8 +47,7 @@ func (s *ReverseProxy) Close() error {
 func (s *ReverseProxy) initRoutes() error {
 	_, err := modules.WalkAPIs(0, -1, func(e storage.Element) error {
 		a := e.(*modules.API)
-		s.Routes.Handle(a.Method, a.URLPattern, a.ID)
-		return nil
+		return s.Routes.Handle(a.Method, a.URLPattern, a.ID)
 	}, storage.Database)
 	return err
 }
@@ -72,9 +71,10 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	if apiID == 0 {
 		// TODO generate error message
 		logrus.Debugf("[%s] %s not exist", method, path)
-		return
+		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
+
 }
 
 func (s *ReverseProxy) HandleHTTPError(ctx *fasthttp.RequestCtx, err error) {
