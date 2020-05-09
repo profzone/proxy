@@ -41,6 +41,7 @@ func runner(app *application.Application) error {
 
 	// start gateway server
 	gateway.APIServer = gateway.CreateReverseProxy(gateway.ReverseProxyConf{
+		Name:            global.Config.Name,
 		ListenAddr:      global.Config.ListenAddr,
 		ReadTimeout:     global.Config.ReadTimeout,
 		WriteTimeout:    global.Config.WriteTimeout,

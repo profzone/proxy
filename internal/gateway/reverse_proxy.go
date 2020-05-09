@@ -12,6 +12,7 @@ import (
 var APIServer *ReverseProxy
 
 type ReverseProxyConf struct {
+	Name            string
 	ListenAddr      string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
@@ -54,6 +55,7 @@ func (s *ReverseProxy) initRoutes() error {
 
 func (s *ReverseProxy) startHTTP() error {
 	s.server = &fasthttp.Server{
+		Name:            s.ReverseProxyConf.Name,
 		Handler:         s.HandleHTTP,
 		ErrorHandler:    s.HandleHTTPError,
 		ReadTimeout:     s.ReverseProxyConf.ReadTimeout,

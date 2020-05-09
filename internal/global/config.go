@@ -33,6 +33,7 @@ var Config = struct {
 	HTTPServer transport_http.ServeHTTP
 
 	// proxying
+	Name            string
 	ListenAddr      string
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
@@ -53,6 +54,7 @@ var Config = struct {
 		WithCORS: true,
 	},
 
+	Name:            "longhorn Proxy Server",
 	ListenAddr:      "0.0.0.0:8000",
 	ReadTimeout:     10 * time.Second,
 	WriteTimeout:    30 * time.Second,
