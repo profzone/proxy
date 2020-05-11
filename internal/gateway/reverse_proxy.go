@@ -74,16 +74,19 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	if apiID == 0 {
 		logrus.Debugf("[%s] %s not exist", method, path)
 		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
+		return
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 
 	api, err := modules.GetAPI(apiID, storage.Database)
 	if err != nil {
 		ctx.Error(err.Error(), fasthttp.StatusInternalServerError)
+		return
 	}
 
 	if api.Status == enum.API_STATUS__DOWN {
 		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
+		return
 	}
 
 	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
@@ -96,6 +99,8 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 		return nil
 	})
+
+	ctx.SuccessString("plain/text", "success")
 }
 
 func (s *ReverseProxy) HandleHTTPError(ctx *fasthttp.RequestCtx, err error) {
