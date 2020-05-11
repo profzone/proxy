@@ -40,28 +40,29 @@ func (b *Bind) Unmarshal(data []byte) (err error) {
 }
 
 func CreateBind(c *Bind, db storage.Storage) (id uint64, err error) {
-	id, err = db.Create(global.Config.ServerPrefix, c)
+	id, err = db.Create(global.Config.BindPrefix, c)
 	return
 }
 
-func GetBind(id uint64, db storage.Storage) (c *Bind, err error) {
-	err = db.Get(global.Config.ServerPrefix, id, c)
-	return
-}
-
-func WalkBinds(start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
-	nextID, err = db.Walk(global.Config.ServerPrefix, start, limit, func() storage.Element {
+func WalkBinds(clusterID uint64, start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
+	nextID, err = db.Walk(fmt.Sprintf("%s/%d/", global.Config.BindPrefix, clusterID), start, limit, func() storage.Element {
 		return &Bind{}
 	}, walking)
 	return
 }
 
 func UpdateBind(c *Bind, db storage.Storage) (err error) {
-	err = db.Update(global.Config.ServerPrefix, c)
+	err = db.Update(global.Config.BindPrefix, c)
 	return
 }
 
-func DeleteBind(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ServerPrefix, fmt.Sprintf("%d", id))
+func DeleteBind(clusterID uint64, serverID uint64, db storage.Storage) (err error) {
+	var prefix string
+	if serverID == 0 {
+		prefix = fmt.Sprintf("%d/", clusterID)
+	} else {
+		prefix = fmt.Sprintf("%d/%d", clusterID, serverID)
+	}
+	err = db.Delete(global.Config.BindPrefix, prefix)
 	return
 }

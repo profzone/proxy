@@ -41,6 +41,10 @@ func (v *Server) Unmarshal(data []byte) (err error) {
 	return
 }
 
+func (v *Server) GetHost() string {
+	return fmt.Sprintf("%s:%d", v.Host, v.Port)
+}
+
 func CreateServer(c *Server, db storage.Storage) (id uint64, err error) {
 	id, err = db.Create(global.Config.ServerPrefix, c)
 	return

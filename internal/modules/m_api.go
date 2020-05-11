@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
@@ -20,9 +21,10 @@ type API struct {
 	Method string `json:"method" default:""`
 	// 接口状态
 	Status enum.ApiStatus `json:"status" default:"UP"`
-	// IPControl
-	// Qps
-	// Fuse
+	// TODO IPControl
+	// TODO Qps
+	// TODO Fuse
+	// TODO Fusion
 	// 反向代理调度
 	Dispatchers []Dispatcher `json:"dispatcher"`
 }
@@ -49,12 +51,23 @@ func (v *API) Unmarshal(data []byte) (err error) {
 	return
 }
 
+func (v *API) WalkDispatcher(walking func(dispatcher *Dispatcher) error) {
+	for _, d := range v.Dispatchers {
+		err := walking(&d)
+		if err != nil {
+			// TODO change error display
+			logrus.Error(err)
+		}
+	}
+}
+
 func CreateAPI(c *API, db storage.Storage) (id uint64, err error) {
 	id, err = db.Create(global.Config.ApiPrefix, c)
 	return
 }
 
 func GetAPI(id uint64, db storage.Storage) (c *API, err error) {
+	c = &API{}
 	err = db.Get(global.Config.ApiPrefix, id, c)
 	return
 }

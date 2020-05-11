@@ -40,6 +40,15 @@ func (v *Cluster) Unmarshal(data []byte) (err error) {
 	return
 }
 
+func (v *Cluster) GetLoadBalance() LoadBalancer {
+	switch v.LoadBalanceType {
+	case enum.LOAD_BALANCE_TYPE__ROUND_ROBIN:
+		return NewRoundRobin()
+	default:
+		return nil
+	}
+}
+
 func CreateCluster(c *Cluster, db storage.Storage) (id uint64, err error) {
 	id, err = db.Create(global.Config.ClusterPrefix, c)
 	return

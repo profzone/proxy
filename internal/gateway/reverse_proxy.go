@@ -3,6 +3,7 @@ package gateway
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/route"
@@ -71,12 +72,30 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	method := string(ctx.Method())
 	apiID, params, _ := s.Routes.Lookup(method, path)
 	if apiID == 0 {
-		// TODO generate error message
 		logrus.Debugf("[%s] %s not exist", method, path)
 		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 
+	api, err := modules.GetAPI(apiID, storage.Database)
+	if err != nil {
+		ctx.Error(err.Error(), fasthttp.StatusInternalServerError)
+	}
+
+	if api.Status == enum.API_STATUS__DOWN {
+		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
+	}
+
+	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
+		_, err := dispatcher.Dispatch(ctx, storage.Database)
+		if err != nil {
+			return err
+		}
+
+		// TODO resp fusion
+
+		return nil
+	})
 }
 
 func (s *ReverseProxy) HandleHTTPError(ctx *fasthttp.RequestCtx, err error) {

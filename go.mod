@@ -32,6 +32,7 @@ replace (
 require (
 	github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473 // indirect
 	github.com/golang/protobuf v1.3.5 // indirect
+	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/johnnyeven/libtools v0.0.0-20191126065708-61829c1adf46 // indirect
 	github.com/profzone/eden-framework v0.0.0-20200107094924-5879c460b9aa
 	github.com/sirupsen/logrus v1.4.2
