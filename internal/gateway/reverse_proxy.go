@@ -90,10 +90,13 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
-		_, err := dispatcher.Dispatch(ctx, storage.Database)
+		resp, err := dispatcher.Dispatch(ctx, storage.Database)
 		if err != nil {
 			return err
 		}
+		defer func() {
+			fasthttp.ReleaseResponse(resp)
+		}()
 
 		// TODO resp fusion
 

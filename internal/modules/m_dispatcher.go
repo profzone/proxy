@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/copier"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/internal/client"
 	"longhorn/proxy/internal/storage"
 	"time"
 )
@@ -41,6 +42,24 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, db storage.Storage) (*fa
 		return nil, err
 	}
 
+	req := fasthttp.AcquireRequest()
+	resp := fasthttp.AcquireResponse()
+	defer func() {
+		fasthttp.ReleaseRequest(req)
+	}()
+
+	err = copier.Copy(req, ctx.Request)
+	if err != nil {
+		return nil, err
+	}
+
+	if d.Router.Match(req) {
+		err = d.Router.Rewrite(req)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	lb := cluster.GetLoadBalance()
 	if lb == nil {
 		return nil, fmt.Errorf("cluster did not set load balance type")
@@ -48,19 +67,16 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, db storage.Storage) (*fa
 
 	serverID := lb.Apply(ctx.Request, servers)
 	target := serverMap[serverID]
-
-	req := fasthttp.AcquireRequest()
-	resp := fasthttp.AcquireResponse()
-
-	err = copier.Copy(req, ctx.Request)
-	if err != nil {
-		return nil, err
-	}
 	req.SetHost(target.GetHost())
 
-	// TODO rewrite
+	cli := client.ClientPool.AcquireClient()
+	defer func() {
+		client.ClientPool.ReleaseClient(cli)
+	}()
+	cli.ReadTimeout = d.ReadTimeout
+	cli.WriteTimeout = d.WriteTimeout
 
-	err = fasthttp.Do(req, resp)
+	err = cli.Do(req, resp)
 	if err != nil {
 		return nil, err
 	}
@@ -69,5 +85,8 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, db storage.Storage) (*fa
 }
 
 func (d *Dispatcher) dispatchTarget(originRequest fasthttp.Request) uint64 {
-	return 0
+	if d.Router.Match(&originRequest) && d.Router.ClusterID != 0 {
+		return d.Router.ClusterID
+	}
+	return d.ClusterID
 }
