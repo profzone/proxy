@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/valyala/fasthttp"
+	"strconv"
 	"strings"
 )
 
@@ -40,7 +41,7 @@ func opContain(origin string, value string) bool {
 	return false
 }
 
-func opGte(origin string, value string) bool {
+func opStrGte(origin string, value string) bool {
 	flag := strings.Compare(origin, value)
 	if flag >= 0 {
 		return true
@@ -48,7 +49,7 @@ func opGte(origin string, value string) bool {
 	return false
 }
 
-func opGt(origin string, value string) bool {
+func opStrGt(origin string, value string) bool {
 	flag := strings.Compare(origin, value)
 	if flag > 0 {
 		return true
@@ -56,7 +57,7 @@ func opGt(origin string, value string) bool {
 	return false
 }
 
-func opLte(origin string, value string) bool {
+func opStrLte(origin string, value string) bool {
 	flag := strings.Compare(origin, value)
 	if flag <= 0 {
 		return true
@@ -64,9 +65,45 @@ func opLte(origin string, value string) bool {
 	return false
 }
 
-func opLt(origin string, value string) bool {
+func opStrLt(origin string, value string) bool {
 	flag := strings.Compare(origin, value)
 	if flag < 0 {
+		return true
+	}
+	return false
+}
+
+func opGte(origin string, value string) bool {
+	originDigit, _ := strconv.Atoi(origin)
+	valueDigit, _ := strconv.Atoi(value)
+	if originDigit >= valueDigit {
+		return true
+	}
+	return false
+}
+
+func opGt(origin string, value string) bool {
+	originDigit, _ := strconv.Atoi(origin)
+	valueDigit, _ := strconv.Atoi(value)
+	if originDigit > valueDigit {
+		return true
+	}
+	return false
+}
+
+func opLte(origin string, value string) bool {
+	originDigit, _ := strconv.Atoi(origin)
+	valueDigit, _ := strconv.Atoi(value)
+	if originDigit <= valueDigit {
+		return true
+	}
+	return false
+}
+
+func opLt(origin string, value string) bool {
+	originDigit, _ := strconv.Atoi(origin)
+	valueDigit, _ := strconv.Atoi(value)
+	if originDigit < valueDigit {
 		return true
 	}
 	return false

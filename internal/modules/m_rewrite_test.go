@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestScan(t *testing.T) {
+func TestScanPattern(t *testing.T) {
 	req := fasthttp.AcquireRequest()
 	defer func() {
 		fasthttp.ReleaseRequest(req)

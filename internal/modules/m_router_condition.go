@@ -9,21 +9,29 @@ import (
 )
 
 const (
-	conditionOpEqual    = "="
+	conditionOpStrGte   = "@>="
+	conditionOpStrLte   = "@<="
+	conditionOpStrGt    = "@>"
+	conditionOpStrLt    = "@<"
 	conditionOpNotEqual = "!="
 	conditionOpGte      = ">="
-	conditionOpGt       = ">"
 	conditionOpLte      = "<="
+	conditionOpGt       = ">"
 	conditionOpLt       = "<"
+	conditionOpEqual    = "="
 	conditionOpContain  = "~"
 )
 
 var opArray = []string{
-	conditionOpEqual,
+	conditionOpStrGte,
+	conditionOpStrLte,
+	conditionOpStrGt,
+	conditionOpStrLt,
 	conditionOpNotEqual,
 	conditionOpGte,
-	conditionOpGt,
 	conditionOpLte,
+	conditionOpEqual,
+	conditionOpGt,
 	conditionOpLt,
 	conditionOpContain,
 }
@@ -42,6 +50,14 @@ func getOpFuncByStr(opStr string) opFunc {
 		return opLte
 	case conditionOpLt:
 		return opLt
+	case conditionOpStrGte:
+		return opStrGte
+	case conditionOpStrGt:
+		return opStrGt
+	case conditionOpStrLte:
+		return opStrLte
+	case conditionOpStrLt:
+		return opStrLt
 	case conditionOpContain:
 		return opContain
 	default:
