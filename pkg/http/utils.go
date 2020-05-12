@@ -1,8 +1,22 @@
 package http
 
-type RequestPagination struct {
-	// 分页偏移量
-	Offset int32 `json:"offset" name:"offset" in:"query" default:"10" validate:"@int32[0,100]"`
-	// 每页数据量
-	Size int32 `json:"size" name:"size" in:"query" default:"10" validate:"@int32[10,100]"`
+import (
+	"github.com/valyala/fasthttp"
+	"strings"
+)
+
+func RealClientIP(ctx *fasthttp.RequestCtx) string {
+	clientIP := string(ctx.Request.Header.Peek("X-Forwarded-For"))
+	if index := strings.IndexByte(clientIP, ','); index >= 0 {
+		clientIP = clientIP[0:index]
+	}
+	clientIP = strings.TrimSpace(clientIP)
+	if len(clientIP) > 0 {
+		return clientIP
+	}
+	clientIP = strings.TrimSpace(string(ctx.Request.Header.Peek("X-Real-Ip")))
+	if len(clientIP) > 0 {
+		return clientIP
+	}
+	return ctx.RemoteIP().String()
 }

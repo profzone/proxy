@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"github.com/jinzhu/copier"
 	"github.com/valyala/fasthttp"
-	"longhorn/proxy/internal/client"
 	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/pkg/pool"
 	"longhorn/proxy/pkg/route"
 	"time"
 )
 
 type Dispatcher struct {
-	Router *Router `json:"router" default:""`
-	// TODO Validations
+	Router       *Router       `json:"router" default:""`
 	WriteTimeout time.Duration `json:"writeTimeout" default:""`
 	ReadTimeout  time.Duration `json:"readTimeout" default:""`
 	ClusterID    uint64        `json:"clusterID,string"`
@@ -70,9 +69,9 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	target := serverMap[serverID]
 	req.SetHost(target.GetHost())
 
-	cli := client.ClientPool.AcquireClient()
+	cli := pool.ClientPool.AcquireClient()
 	defer func() {
-		client.ClientPool.ReleaseClient(cli)
+		pool.ClientPool.ReleaseClient(cli)
 	}()
 	// TODO if not set then use global config
 	cli.ReadTimeout = d.ReadTimeout

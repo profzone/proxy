@@ -1,11 +1,13 @@
 package gateway
 
 import (
+	"github.com/juju/ratelimit"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/pkg/pool"
 	"longhorn/proxy/pkg/route"
 	"time"
 )
@@ -89,19 +91,33 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 		return
 	}
 
-	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
-		resp, err := dispatcher.Dispatch(ctx, params, storage.Database)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			fasthttp.ReleaseResponse(resp)
-		}()
+	// QPS
+	limiter := ratelimit.NewBucket(time.Second/time.Duration(api.MaxQPS), api.MaxQPS)
+	if limiter.TakeAvailable(1) == 0 {
+		ctx.Error("Too many requests", fasthttp.StatusTooManyRequests)
+		return
+	}
 
-		// TODO resp fusion
+	wg := pool.WGPool.AcquireWG()
+	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
+		go func(dispatcher *modules.Dispatcher) {
+			defer wg.Done()
+
+			resp, err := dispatcher.Dispatch(ctx, params, storage.Database)
+			if err != nil {
+				return
+			}
+			defer fasthttp.ReleaseResponse(resp)
+
+			// TODO resp fusion
+		}(dispatcher)
+		wg.Add(1)
 
 		return nil
 	})
+
+	wg.Wait()
+	pool.WGPool.ReleaseWG(wg)
 
 	ctx.SuccessString("plain/text", "success")
 }

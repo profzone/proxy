@@ -21,8 +21,10 @@ type API struct {
 	Method string `json:"method" default:""`
 	// 接口状态
 	Status enum.ApiStatus `json:"status" default:"UP"`
+	// TODO Validations
 	// TODO IPControl
-	// TODO Qps
+	// 最大QPS
+	MaxQPS int64 `json:"maxQPS" default:""`
 	// TODO Fuse
 	// TODO Fusion
 	// 反向代理调度

@@ -1,4 +1,4 @@
-package client
+package pool
 
 import (
 	"github.com/valyala/fasthttp"
@@ -12,11 +12,11 @@ func init() {
 }
 
 type ReverseClientPool struct {
-	pool sync.Pool
+	sync.Pool
 }
 
 func (p *ReverseClientPool) AcquireClient() *fasthttp.Client {
-	value := ClientPool.pool.Get()
+	value := ClientPool.Get()
 	if value == nil {
 		return &fasthttp.Client{}
 	}
@@ -25,6 +25,6 @@ func (p *ReverseClientPool) AcquireClient() *fasthttp.Client {
 
 func (p *ReverseClientPool) ReleaseClient(c *fasthttp.Client) {
 	if c != nil {
-		ClientPool.pool.Put(c)
+		ClientPool.Put(c)
 	}
 }
