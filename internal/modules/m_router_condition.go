@@ -127,19 +127,3 @@ func (c *routerCondition) Match(req *fasthttp.Request) bool {
 	}
 	return true
 }
-
-func (c *routerCondition) UnmarshalJSON([]byte) error {
-	panic("implement me")
-}
-
-func (c routerCondition) MarshalJSON() ([]byte, error) {
-	panic("implement me")
-}
-
-func (c *routerCondition) GobDecode([]byte) error {
-	panic("implement me")
-}
-
-func (c routerCondition) GobEncode() ([]byte, error) {
-	panic("implement me")
-}
