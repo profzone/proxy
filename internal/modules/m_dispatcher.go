@@ -6,6 +6,7 @@ import (
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/client"
 	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/pkg/route"
 	"time"
 )
 
@@ -17,7 +18,7 @@ type Dispatcher struct {
 	ClusterID    uint64        `json:"clusterID,string"`
 }
 
-func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, db storage.Storage) (*fasthttp.Response, error) {
+func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db storage.Storage) (*fasthttp.Response, error) {
 	clusterID := d.dispatchTarget(ctx.Request)
 
 	cluster, err := GetCluster(clusterID, db)
@@ -54,7 +55,7 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, db storage.Storage) (*fa
 	}
 
 	if d.Router.Match(req) {
-		err = d.Router.Rewrite(req)
+		err = d.Router.Rewrite(req, params)
 		if err != nil {
 			return nil, err
 		}

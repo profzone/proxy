@@ -2,6 +2,7 @@ package modules
 
 import (
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/pkg/route"
 )
 
 type Router struct {
@@ -20,15 +21,15 @@ func (r *Router) Match(req *fasthttp.Request) bool {
 	return true
 }
 
-func (r *Router) Rewrite(req *fasthttp.Request) error {
+func (r *Router) Rewrite(req *fasthttp.Request, params route.Params) error {
 	if r.RewritePattern == "" {
 		return nil
 	}
-	expr := newRewriteExpr(r.RewritePattern)
+	expr := newRewriteExpr(req, r.RewritePattern, nil)
 	if expr.Error() != nil {
 		return expr.Error()
 	}
-	err := expr.apply(req)
+	err := expr.apply()
 	if err != nil {
 		return err
 	}

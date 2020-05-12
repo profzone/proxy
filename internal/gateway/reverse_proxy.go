@@ -90,7 +90,7 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
-		resp, err := dispatcher.Dispatch(ctx, storage.Database)
+		resp, err := dispatcher.Dispatch(ctx, params, storage.Database)
 		if err != nil {
 			return err
 		}
