@@ -10,20 +10,20 @@ import (
 )
 
 const (
-	dollar  byte = '$'
-	lParent byte = '('
-	rParent byte = ')'
-	dot     byte = '.'
+	rewriteTokenDollar  byte = '$'
+	rewriteTokenLParent byte = '('
+	rewriteTokenRParent byte = ')'
+	rewriteTokenDot     byte = '.'
 )
 
 var (
-	context = []byte("context")
-	origin  = []byte("origin")
-	path    = []byte("path")
-	query   = []byte("query")
-	cookie  = []byte("cookie")
-	header  = []byte("header")
-	body    = []byte("body")
+	rewriteExprContext = []byte("context")
+	rewriteExprOrigin  = []byte("origin")
+	rewriteExprPath    = []byte("path")
+	rewriteExprQuery   = []byte("query")
+	rewriteExprCookie  = []byte("cookie")
+	rewriteExprHeader  = []byte("header")
+	rewriteExprBody    = []byte("body")
 )
 
 type rewriteExpr struct {
@@ -56,19 +56,19 @@ func (r *rewriteExpr) scan() {
 	var tokenStart = -1
 	for index, c := range r.origin {
 		switch c {
-		case dollar:
-			if prevToken != rParent {
+		case rewriteTokenDollar:
+			if prevToken != rewriteTokenRParent {
 				// constToken
 				r.tokens = append(r.tokens, &constToken{value: r.origin[tokenStart+1 : index]})
 				tokenStart = index
 			}
-		case lParent:
-			if prevToken != dollar {
+		case rewriteTokenLParent:
+			if prevToken != rewriteTokenDollar {
 				r.err = fmt.Errorf("[Col %d]syntax error: \"(\" must followed by \"$\"", index)
 				return
 			}
 			tokenStart = index
-		case rParent:
+		case rewriteTokenRParent:
 			if tokenStart == 0 {
 				r.err = fmt.Errorf("[Col %d]syntax error: can't find previours \"(\"", index)
 				return
@@ -112,25 +112,25 @@ type token interface {
 }
 
 func newParamToken(value []byte) (token, error) {
-	sep := bytes.Split(value, []byte{dot})
-	if bytes.Compare(sep[0], origin) == 0 {
+	sep := bytes.Split(value, []byte{rewriteTokenDot})
+	if bytes.Compare(sep[0], rewriteExprOrigin) == 0 {
 		return newOriginToken(sep[1:])
-	} else if bytes.Compare(sep[0], context) == 0 {
+	} else if bytes.Compare(sep[0], rewriteExprContext) == 0 {
 
 	}
 	return nil, fmt.Errorf("syntax error: not support expression: %s", string(sep[0]))
 }
 
 func newOriginToken(value [][]byte) (token, error) {
-	if bytes.Compare(value[0], query) == 0 {
+	if bytes.Compare(value[0], rewriteExprQuery) == 0 {
 		return originQueryToken{key: string(value[1])}, nil
-	} else if bytes.Compare(value[0], body) == 0 {
+	} else if bytes.Compare(value[0], rewriteExprBody) == 0 {
 		return originBodyToken{path: str.BytesToStrings(value[1:])}, nil
-	} else if bytes.Compare(value[0], cookie) == 0 {
+	} else if bytes.Compare(value[0], rewriteExprCookie) == 0 {
 		return originCookieToken{key: string(value[1])}, nil
-	} else if bytes.Compare(value[0], header) == 0 {
+	} else if bytes.Compare(value[0], rewriteExprHeader) == 0 {
 		return originHeaderToken{key: string(value[1])}, nil
-	} else if bytes.Compare(value[0], path) == 0 {
+	} else if bytes.Compare(value[0], rewriteExprPath) == 0 {
 		return originPathToken{key: string(value[1])}, nil
 	}
 

@@ -17,7 +17,7 @@ type Router struct {
 }
 
 func (r *Router) Match(req *fasthttp.Request, params route.Params) bool {
-	condition := newRouterCondition(r.Condition)
+	condition := newRouterCondition(r.Condition, params)
 	if condition != nil && !condition.Match(req) {
 		return false
 	}
@@ -28,7 +28,7 @@ func (r *Router) Rewrite(req *fasthttp.Request, params route.Params) error {
 	if r.RewritePattern == "" {
 		return nil
 	}
-	expr := newRewriteExpr(req, r.RewritePattern, nil)
+	expr := newRewriteExpr(req, r.RewritePattern, params)
 	if expr.Error() != nil {
 		return expr.Error()
 	}
