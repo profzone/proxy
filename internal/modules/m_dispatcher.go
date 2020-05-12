@@ -11,15 +11,15 @@ import (
 )
 
 type Dispatcher struct {
-	Router Router `json:"router" default:""`
-	// Validations
+	Router *Router `json:"router" default:""`
+	// TODO Validations
 	WriteTimeout time.Duration `json:"writeTimeout" default:""`
 	ReadTimeout  time.Duration `json:"readTimeout" default:""`
 	ClusterID    uint64        `json:"clusterID,string"`
 }
 
 func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db storage.Storage) (*fasthttp.Response, error) {
-	clusterID := d.dispatchTarget(ctx.Request)
+	clusterID := d.dispatchTarget(&ctx.Request, params)
 
 	cluster, err := GetCluster(clusterID, db)
 	if err != nil {
@@ -54,7 +54,7 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 		return nil, err
 	}
 
-	if d.Router.Match(req) {
+	if d.Router != nil && d.Router.Match(req, params) {
 		err = d.Router.Rewrite(req, params)
 		if err != nil {
 			return nil, err
@@ -86,8 +86,8 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	return resp, nil
 }
 
-func (d *Dispatcher) dispatchTarget(originRequest fasthttp.Request) uint64 {
-	if d.Router.Match(&originRequest) && d.Router.ClusterID != 0 {
+func (d *Dispatcher) dispatchTarget(originRequest *fasthttp.Request, params route.Params) uint64 {
+	if d.Router != nil && d.Router.Match(originRequest, params) && d.Router.ClusterID != 0 {
 		return d.Router.ClusterID
 	}
 	return d.ClusterID

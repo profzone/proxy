@@ -8,16 +8,19 @@ import (
 type Router struct {
 	// 唯一标识
 	ID uint64 `json:"id" default:""`
-	// TODO 路由条件
-
+	// 路由条件
+	Condition string `json:"condition" default:""`
 	// URL重写规则
 	RewritePattern string `json:"rewritePattern" default:""`
 	// 重写到特定集群
 	ClusterID uint64 `json:"clusterID,string" default:""`
 }
 
-func (r *Router) Match(req *fasthttp.Request) bool {
-	// TODO
+func (r *Router) Match(req *fasthttp.Request, params route.Params) bool {
+	condition := newRouterCondition(r.Condition)
+	if condition != nil && !condition.Match(req) {
+		return false
+	}
 	return true
 }
 
