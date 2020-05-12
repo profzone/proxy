@@ -73,6 +73,7 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, db storage.Storage) (*fa
 	defer func() {
 		client.ClientPool.ReleaseClient(cli)
 	}()
+	// TODO if not set then use global config
 	cli.ReadTimeout = d.ReadTimeout
 	cli.WriteTimeout = d.WriteTimeout
 
