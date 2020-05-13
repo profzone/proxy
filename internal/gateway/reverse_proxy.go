@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"github.com/juju/ratelimit"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
@@ -24,9 +23,9 @@ type ReverseProxyConf struct {
 }
 
 type ReverseProxy struct {
+	ReverseProxyConf
 	server *fasthttp.Server
 	Routes *route.Routes
-	ReverseProxyConf
 }
 
 func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
@@ -92,8 +91,7 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 
 	// QPS
-	limiter := ratelimit.NewBucket(time.Second/time.Duration(api.MaxQPS), api.MaxQPS)
-	if limiter.TakeAvailable(1) == 0 {
+	if api.Limiter != nil && api.Limiter.TakeAvailable(1) == 0 {
 		ctx.Error("Too many requests", fasthttp.StatusTooManyRequests)
 		return
 	}

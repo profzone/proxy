@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"github.com/juju/ratelimit"
 	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
+	"time"
 )
 
 type API struct {
@@ -24,7 +26,8 @@ type API struct {
 	// TODO Validations
 	// TODO IPControl
 	// 最大QPS
-	MaxQPS int64 `json:"maxQPS" default:""`
+	MaxQPS  int64             `json:"maxQPS" default:""`
+	Limiter *ratelimit.Bucket `json:"-"`
 	// TODO Fuse
 	// TODO Fusion
 	// 反向代理调度
@@ -50,6 +53,10 @@ func (v *API) Unmarshal(data []byte) (err error) {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
 	err = dec.Decode(v)
+
+	if v.MaxQPS > 0 {
+		v.Limiter = ratelimit.NewBucket(time.Second/time.Duration(v.MaxQPS), v.MaxQPS)
+	}
 	return
 }
 
