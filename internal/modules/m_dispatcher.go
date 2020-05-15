@@ -1,8 +1,11 @@
 package modules
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/sony/gobreaker"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
@@ -11,10 +14,40 @@ import (
 )
 
 type Dispatcher struct {
-	Router       *Router       `json:"router" default:""`
+	// 路由
+	Router *Router `json:"router,omitempty" default:""`
+	// 熔断器
+	BreakerConf *BreakerConf `json:"breaker,omitempty" default:""`
+	breaker     *gobreaker.CircuitBreaker
+
 	WriteTimeout time.Duration `json:"writeTimeout" default:""`
 	ReadTimeout  time.Duration `json:"readTimeout" default:""`
 	ClusterID    uint64        `json:"clusterID,string"`
+}
+
+func (d *Dispatcher) GobDecode(data []byte) error {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(d)
+	if err != nil {
+		return err
+	}
+
+	if d.BreakerConf != nil {
+		d.breaker = gobreaker.NewCircuitBreaker(gobreaker.Settings{
+			Name:          "",
+			MaxRequests:   d.BreakerConf.MaxRequests,
+			Interval:      d.BreakerConf.Interval,
+			Timeout:       d.BreakerConf.Timeout,
+			ReadyToTrip:   BreakerStrategyTotalFailures,
+			OnStateChange: d.breakerStateChanged,
+		})
+	}
+
+	return nil
+}
+
+func (d *Dispatcher) breakerStateChanged(name string, from gobreaker.State, to gobreaker.State) {
+
 }
 
 func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db storage.Storage) (*fasthttp.Response, error) {
@@ -43,7 +76,6 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	}
 
 	req := fasthttp.AcquireRequest()
-	resp := fasthttp.AcquireResponse()
 	defer func() {
 		fasthttp.ReleaseRequest(req)
 	}()
@@ -77,12 +109,25 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	cli.ReadTimeout = d.ReadTimeout
 	cli.WriteTimeout = d.WriteTimeout
 
-	err = cli.Do(req, resp)
+	resp, err := d.wrapBreakerRequest(cli, req)
 	if err != nil {
 		return nil, err
 	}
 
 	return resp, nil
+}
+
+func (d *Dispatcher) wrapBreakerRequest(cli *fasthttp.Client, req *fasthttp.Request) (resp *fasthttp.Response, err error) {
+	result, err := d.breaker.Execute(func() (resp interface{}, err error) {
+		response := fasthttp.AcquireResponse()
+		err = cli.Do(req, response)
+		if err != nil {
+			return nil, err
+		}
+		return response, nil
+	})
+	resp = result.(*fasthttp.Response)
+	return
 }
 
 func (d *Dispatcher) dispatchTarget(originRequest *fasthttp.Request, params route.Params) uint64 {

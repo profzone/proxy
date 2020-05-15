@@ -40,6 +40,8 @@ func (s *ReverseProxy) Start() error {
 	if err != nil {
 		return err
 	}
+
+	logrus.Infof("reverse proxy start listen on %s", s.ListenAddr)
 	return s.startHTTP()
 }
 
@@ -47,6 +49,7 @@ func (s *ReverseProxy) Close() error {
 	return s.server.Shutdown()
 }
 
+// TODO initRoutes need to load all API instance to prevent API instance initialization every request
 func (s *ReverseProxy) initRoutes() error {
 	_, err := modules.WalkAPIs(0, -1, func(e storage.Element) error {
 		a := e.(*modules.API)
@@ -79,24 +82,34 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 
+	// TODO initRoutes need to load all API instance to prevent API instance initialization every request
 	api, err := modules.GetAPI(apiID, storage.Database)
 	if err != nil {
 		ctx.Error(err.Error(), fasthttp.StatusInternalServerError)
 		return
 	}
 
+	// Status check
 	if api.Status == enum.API_STATUS__DOWN {
 		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
 		return
 	}
 
+	// IP Control
+	if !api.FilterIPControl(&ctx.Request) {
+		ctx.Error("Forbidden", fasthttp.StatusForbidden)
+		return
+	}
+
 	// QPS
-	if api.Limiter != nil && api.Limiter.TakeAvailable(1) == 0 {
+	if !api.FilterQPS() {
 		ctx.Error("Too many requests", fasthttp.StatusTooManyRequests)
 		return
 	}
 
 	wg := pool.WGPool.AcquireWG()
+	defer pool.WGPool.ReleaseWG(wg)
+
 	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
 		go func(dispatcher *modules.Dispatcher) {
 			defer wg.Done()
@@ -113,9 +126,7 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 		return nil
 	})
-
 	wg.Wait()
-	pool.WGPool.ReleaseWG(wg)
 
 	ctx.SuccessString("plain/text", "success")
 }

@@ -38,6 +38,7 @@ require (
 	github.com/juju/ratelimit v1.0.1
 	github.com/profzone/eden-framework v0.0.0-20200107094924-5879c460b9aa
 	github.com/sirupsen/logrus v1.4.2
+	github.com/sony/gobreaker v0.4.1
 	github.com/valyala/fasthttp v1.9.0
 	go.etcd.io/etcd v0.0.0-20200319002442-e784ba73c229
 	go.uber.org/zap v1.14.1 // indirect

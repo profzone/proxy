@@ -6,11 +6,21 @@ import (
 	"fmt"
 	"github.com/juju/ratelimit"
 	"github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 	"time"
 )
+
+type BreakerConf struct {
+	// Half-open状态下最多能进入的请求数量
+	MaxRequests uint32
+	// Close状态下重置内部统计的时间
+	Interval time.Duration
+	// Open状态下变更为Half-open状态的时间
+	Timeout time.Duration
+}
 
 type API struct {
 	// 唯一标识
@@ -23,15 +33,16 @@ type API struct {
 	Method string `json:"method" default:""`
 	// 接口状态
 	Status enum.ApiStatus `json:"status" default:"UP"`
-	// TODO Validations
-	// TODO IPControl
+	// IP黑白名单 format: <blacklist(>ip[,]...<)whitelist(>ip[,]...<)>
+	IPControl    string `json:"ipControl,omitempty" default:""`
+	ipController *IPController
 	// 最大QPS
-	MaxQPS  int64             `json:"maxQPS" default:""`
-	Limiter *ratelimit.Bucket `json:"-"`
-	// TODO Fuse
-	// TODO Fusion
+	MaxQPS  int64 `json:"maxQPS,omitempty" default:""`
+	limiter *ratelimit.Bucket
+	// TODO Validations
 	// 反向代理调度
 	Dispatchers []Dispatcher `json:"dispatcher"`
+	// TODO Fusion
 }
 
 func (v *API) SetIdentity(id uint64) {
@@ -53,9 +64,18 @@ func (v *API) Unmarshal(data []byte) (err error) {
 	buf := bytes.NewBuffer(data)
 	dec := gob.NewDecoder(buf)
 	err = dec.Decode(v)
+	if err != nil {
+		return
+	}
 
+	if v.IPControl != "" {
+		v.ipController, err = newIPController(v.IPControl)
+		if err != nil {
+			return
+		}
+	}
 	if v.MaxQPS > 0 {
-		v.Limiter = ratelimit.NewBucket(time.Second/time.Duration(v.MaxQPS), v.MaxQPS)
+		v.limiter = ratelimit.NewBucket(time.Second/time.Duration(v.MaxQPS), v.MaxQPS)
 	}
 	return
 }
@@ -68,6 +88,20 @@ func (v *API) WalkDispatcher(walking func(dispatcher *Dispatcher) error) {
 			logrus.Error(err)
 		}
 	}
+}
+
+func (v *API) FilterIPControl(req *fasthttp.Request) bool {
+	if v.ipController != nil {
+		return v.ipController.filter(req)
+	}
+	return true
+}
+
+func (v *API) FilterQPS() bool {
+	if v.limiter != nil && v.limiter.TakeAvailable(1) == 0 {
+		return false
+	}
+	return true
 }
 
 func CreateAPI(c *API, db storage.Storage) (id uint64, err error) {
