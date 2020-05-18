@@ -22,6 +22,16 @@ type BreakerConf struct {
 	Timeout time.Duration
 }
 
+type APIContainer map[uint64]*API
+
+func (c APIContainer) Add(api *API) {
+	c[api.ID] = api
+}
+
+func (c APIContainer) Get(id uint64) *API {
+	return c[id]
+}
+
 type API struct {
 	// 唯一标识
 	ID uint64 `json:"id" default:""`

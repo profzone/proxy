@@ -32,7 +32,7 @@ func (req CreateApi) Output(ctx context.Context) (result interface{}, err error)
 	}
 
 	req.Body.ID = id
-	err = gateway.APIServer.Routes.Handle(req.Body.Method, req.Body.URLPattern, id)
+	err = gateway.APIServer.Routes().Handle(req.Body.Method, req.Body.URLPattern, id)
 	if err != nil {
 		return
 	}

@@ -8,5 +8,5 @@ func BreakerStrategyConsecutiveFailures(counts gobreaker.Counts) bool {
 
 func BreakerStrategyTotalFailures(counts gobreaker.Counts) bool {
 	failureRatio := float64(counts.TotalFailures) / float64(counts.Requests)
-	return counts.Requests >= 3 && failureRatio >= 0.6
+	return counts.Requests >= 3 && failureRatio >= 0.5
 }

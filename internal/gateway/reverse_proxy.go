@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
@@ -24,15 +25,21 @@ type ReverseProxyConf struct {
 
 type ReverseProxy struct {
 	ReverseProxyConf
-	server *fasthttp.Server
-	Routes *route.Routes
+	server       *fasthttp.Server
+	routes       *route.Routes
+	apiContainer modules.APIContainer
 }
 
 func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
 	return &ReverseProxy{
 		ReverseProxyConf: conf,
-		Routes:           route.NewRoutes(),
+		routes:           route.NewRoutes(),
+		apiContainer:     modules.APIContainer{},
 	}
+}
+
+func (s *ReverseProxy) Routes() *route.Routes {
+	return s.routes
 }
 
 func (s *ReverseProxy) Start() error {
@@ -49,11 +56,15 @@ func (s *ReverseProxy) Close() error {
 	return s.server.Shutdown()
 }
 
-// TODO initRoutes need to load all API instance to prevent API instance initialization every request
 func (s *ReverseProxy) initRoutes() error {
 	_, err := modules.WalkAPIs(0, -1, func(e storage.Element) error {
 		a := e.(*modules.API)
-		return s.Routes.Handle(a.Method, a.URLPattern, a.ID)
+		err := s.routes.Handle(a.Method, a.URLPattern, a.ID)
+		if err != nil {
+			return err
+		}
+		s.apiContainer.Add(a)
+		return nil
 	}, storage.Database)
 	return err
 }
@@ -74,7 +85,7 @@ func (s *ReverseProxy) startHTTP() error {
 func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	path := string(ctx.Path())
 	method := string(ctx.Method())
-	apiID, params, _ := s.Routes.Lookup(method, path)
+	apiID, params, _ := s.routes.Lookup(method, path)
 	if apiID == 0 {
 		logrus.Debugf("[%s] %s not exist", method, path)
 		ctx.Error("Unsupported path", fasthttp.StatusNotFound)
@@ -82,10 +93,9 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 
-	// TODO initRoutes need to load all API instance to prevent API instance initialization every request
-	api, err := modules.GetAPI(apiID, storage.Database)
-	if err != nil {
-		ctx.Error(err.Error(), fasthttp.StatusInternalServerError)
+	api := s.apiContainer.Get(apiID)
+	if api == nil {
+		ctx.Error(fmt.Sprintf("apiID %d not found", apiID), fasthttp.StatusInternalServerError)
 		return
 	}
 
@@ -111,6 +121,7 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	defer pool.WGPool.ReleaseWG(wg)
 
 	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
+		wg.Add(1)
 		go func(dispatcher *modules.Dispatcher) {
 			defer wg.Done()
 
@@ -122,7 +133,6 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 
 			// TODO resp fusion
 		}(dispatcher)
-		wg.Add(1)
 
 		return nil
 	})
