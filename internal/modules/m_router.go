@@ -1,6 +1,8 @@
 package modules
 
 import (
+	"bytes"
+	"encoding/gob"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/pkg/route"
 )
@@ -13,12 +15,24 @@ type Router struct {
 	// URL重写规则
 	RewritePattern string `json:"rewritePattern" default:""`
 	// 重写到特定集群
-	ClusterID uint64 `json:"clusterID,string" default:""`
+	ClusterID  uint64 `json:"clusterID,string" default:""`
+	conditions *routerCondition
+}
+
+func (r *Router) GobDecode(data []byte) error {
+	reader := bytes.NewReader(data)
+	dec := gob.NewDecoder(reader)
+	err := dec.Decode(r)
+	if err != nil {
+		return err
+	}
+
+	r.conditions = newRouterCondition(r.Condition)
+	return nil
 }
 
 func (r *Router) Match(req *fasthttp.Request, params route.Params) bool {
-	condition := newRouterCondition(r.Condition, params)
-	if condition != nil && !condition.Match(req) {
+	if r.conditions != nil && !r.conditions.Match(req, params) {
 		return false
 	}
 	return true

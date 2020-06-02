@@ -32,6 +32,7 @@ replace (
 require (
 	github.com/buger/jsonparser v1.0.0
 	github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473 // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.3.5 // indirect
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/johnnyeven/libtools v0.0.0-20191126065708-61829c1adf46 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/sony/gobreaker v0.4.1
 	github.com/valyala/fasthttp v1.9.0
 	go.etcd.io/etcd v0.0.0-20200319002442-e784ba73c229
+	go.mongodb.org/mongo-driver v1.3.3
 	go.uber.org/zap v1.14.1 // indirect
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e // indirect
 )

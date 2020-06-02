@@ -71,24 +71,18 @@ type routerCondition struct {
 	params map[string]string
 }
 
-func newRouterCondition(condition string, params route.Params) *routerCondition {
+func newRouterCondition(condition string) *routerCondition {
 	if condition == "" {
 		return nil
 	}
 	c := &routerCondition{
 		origin: condition,
 		rules:  make([]rule, 0),
-		params: make(map[string]string),
-	}
-
-	for _, p := range params {
-		c.params[p.Key] = p.Value
 	}
 
 	if err := c.scan(); err != nil {
 		return nil
 	}
-
 	return c
 }
 
@@ -119,7 +113,12 @@ func (c *routerCondition) scanRule(rule string) (rule, error) {
 	return newRule(key, value, opFunc)
 }
 
-func (c *routerCondition) Match(req *fasthttp.Request) bool {
+func (c *routerCondition) Match(req *fasthttp.Request, params route.Params) bool {
+	c.params = make(map[string]string)
+	for _, p := range params {
+		c.params[p.Key] = p.Value
+	}
+
 	for _, r := range c.rules {
 		if !r.match(req, c.params) {
 			return false

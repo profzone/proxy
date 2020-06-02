@@ -60,7 +60,11 @@ func (d *Delegate) Close() error {
 func (d *Delegate) Init(dbConfig global.DBConfig) {
 	var err error
 	if dbConfig.DBType == enum.DB_TYPE__ETCD {
-		d.driver, err = NewDBEtcd(dbConfig.Endpoints)
+		d.driver, err = NewDBEtcd(dbConfig)
+	} else if dbConfig.DBType == enum.DB_TYPE__MYSQL {
+		d.driver, err = NewDBMysql(dbConfig)
+	} else if dbConfig.DBType == enum.DB_TYPE__MONGODB {
+		d.driver, err = NewDBMongo(dbConfig)
 	}
 
 	if err != nil {

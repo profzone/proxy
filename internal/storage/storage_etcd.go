@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.etcd.io/etcd/clientv3"
+	"longhorn/proxy/internal/global"
 	"math"
 	"sync"
 	"time"
@@ -16,6 +17,26 @@ type StorageEtcd struct {
 	kvClient clientv3.KV
 
 	idLock sync.Mutex
+}
+
+func NewDBEtcd(config global.DBConfig) (*StorageEtcd, error) {
+	db := &StorageEtcd{}
+	err := db.init(config.Endpoints)
+
+	return db, err
+}
+
+func (s *StorageEtcd) init(endpoints []string) (err error) {
+	s.client, err = clientv3.New(clientv3.Config{
+		Endpoints:   endpoints,
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		return
+	}
+
+	s.kvClient = clientv3.NewKV(s.client)
+	return
 }
 
 func (s *StorageEtcd) Create(prefix string, e Element) (uint64, error) {
@@ -59,26 +80,6 @@ func (s *StorageEtcd) Walk(prefix string, start uint64, limit int64, elementFact
 
 func (s *StorageEtcd) Close() error {
 	return s.client.Close()
-}
-
-func NewDBEtcd(endpoints []string) (*StorageEtcd, error) {
-	db := &StorageEtcd{}
-	err := db.init(endpoints)
-
-	return db, err
-}
-
-func (s *StorageEtcd) init(endpoints []string) (err error) {
-	s.client, err = clientv3.New(clientv3.Config{
-		Endpoints:   endpoints,
-		DialTimeout: 5 * time.Second,
-	})
-	if err != nil {
-		return
-	}
-
-	s.kvClient = clientv3.NewKV(s.client)
-	return
 }
 
 func (s *StorageEtcd) getKey(prefix string, id uint64) string {
