@@ -60,15 +60,52 @@ func (s *StorageMongo) Create(prefix string, e Element) (uint64, error) {
 }
 
 func (s *StorageMongo) Update(prefix string, e Element) error {
-	panic("implement me")
+	s.Lock()
+	defer s.Unlock()
+
+	collection := s.db.Collection(prefix)
+	ctx, _ := context.WithTimeout(context.Background(), s.timeout)
+
+	opts := options.Update()
+	filter := bson.M{
+		"id": e.GetIdentity(),
+	}
+	_, err := collection.UpdateOne(ctx, filter, e, opts)
+	return err
 }
 
 func (s *StorageMongo) Delete(prefix string, id string) error {
-	panic("implement me")
+	s.Lock()
+	defer s.Unlock()
+
+	collection := s.db.Collection(prefix)
+	ctx, _ := context.WithTimeout(context.Background(), s.timeout)
+
+	opts := options.Delete()
+	filter := bson.M{
+		"id": id,
+	}
+	_, err := collection.DeleteOne(ctx, filter, opts)
+	return err
 }
 
 func (s *StorageMongo) Get(prefix string, id uint64, target Element) error {
-	panic("implement me")
+	s.RLock()
+	defer s.RUnlock()
+
+	collection := s.db.Collection(prefix)
+	ctx, _ := context.WithTimeout(context.Background(), s.timeout)
+
+	opts := options.FindOne()
+	filter := bson.M{
+		"id": id,
+	}
+	result := collection.FindOne(ctx, filter, opts)
+	if result.Err() != nil {
+		return result.Err()
+	}
+
+	return result.Decode(target)
 }
 
 func (s *StorageMongo) Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (nextID uint64, err error) {
