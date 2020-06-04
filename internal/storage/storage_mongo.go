@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"longhorn/proxy/internal/global"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -78,14 +79,19 @@ func (s *StorageMongo) Delete(prefix string, id string) error {
 	s.Lock()
 	defer s.Unlock()
 
+	identity, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return err
+	}
+
 	collection := s.db.Collection(prefix)
 	ctx, _ := context.WithTimeout(context.Background(), s.timeout)
 
 	opts := options.Delete()
 	filter := bson.M{
-		"id": id,
+		"id": identity,
 	}
-	_, err := collection.DeleteOne(ctx, filter, opts)
+	_, err = collection.DeleteOne(ctx, filter, opts)
 	return err
 }
 

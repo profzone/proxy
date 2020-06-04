@@ -7,6 +7,7 @@ import (
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/pkg"
 )
 
 type Cluster struct {
@@ -50,6 +51,13 @@ func (v *Cluster) GetLoadBalance() LoadBalancer {
 }
 
 func CreateCluster(c *Cluster, db storage.Storage) (id uint64, err error) {
+	if c.ID == 0 {
+		id, err = pkg.Generator.GenerateUniqueID()
+		if err != nil {
+			return
+		}
+		c.SetIdentity(id)
+	}
 	id, err = db.Create(global.Config.ClusterPrefix, c)
 	return
 }
