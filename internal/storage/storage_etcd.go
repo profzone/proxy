@@ -69,10 +69,14 @@ func (s *StorageEtcd) Get(prefix string, id uint64, target Element) error {
 	return err
 }
 
-func (s *StorageEtcd) Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {
+func (s *StorageEtcd) Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {
 	s.RLock()
 	defer s.RUnlock()
 
+	if condition == nil {
+		condition = WithConditionKey("").Eq(0)
+	}
+	prefix = fmt.Sprintf("%s/%d", prefix, condition.Val)
 	nextStartID, err := s.getElements(prefix, start, limit, elementFactory, walking)
 
 	return nextStartID, err

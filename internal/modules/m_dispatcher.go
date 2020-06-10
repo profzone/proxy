@@ -58,8 +58,8 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 		return nil, err
 	}
 
-	servers := make([]*Server, 0)
-	serverMap := make(map[uint64]*Server)
+	servers := make([]ServerContract, 0)
+	serverMap := make(map[uint64]ServerContract)
 	_, err = WalkBinds(clusterID, 0, -1, func(e storage.Element) error {
 		bind := e.(*Bind)
 		server, err := GetServer(bind.ServerID, db)
@@ -68,7 +68,7 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 		}
 
 		servers = append(servers, server)
-		serverMap[server.ID] = server
+		serverMap[server.GetIdentity()] = server
 		return nil
 	}, db)
 	if err != nil {

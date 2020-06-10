@@ -12,7 +12,7 @@ type Storage interface {
 	Update(prefix string, e Element) error
 	Delete(prefix string, id string) error
 	Get(prefix string, id uint64, target Element) error
-	Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error)
+	Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error)
 }
 
 type Element interface {
@@ -49,8 +49,8 @@ func (d *Delegate) Get(prefix string, id uint64, target Element) error {
 	return d.driver.Get(prefix, id, target)
 }
 
-func (d *Delegate) Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {
-	return d.driver.Walk(prefix, start, limit, elementFactory, walking)
+func (d *Delegate) Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {
+	return d.driver.Walk(prefix, condition, startField, start, limit, elementFactory, walking)
 }
 
 func (d *Delegate) Close() error {

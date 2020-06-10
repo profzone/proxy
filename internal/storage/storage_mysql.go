@@ -52,6 +52,6 @@ func (s *StorageMysql) Get(prefix string, id uint64, target Element) error {
 	panic("implement me")
 }
 
-func (s *StorageMysql) Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {
+func (s *StorageMysql) Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {
 	panic("implement me")
 }

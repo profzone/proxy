@@ -4,13 +4,15 @@ import (
 	"context"
 	"github.com/profzone/eden-framework/pkg/courier"
 	"github.com/profzone/eden-framework/pkg/courier/httpx"
+	"longhorn/proxy/internal/modules"
+	"longhorn/proxy/internal/storage"
 )
 
 func init() {
 	Router.Register(courier.NewRouter(GetServer{}))
 }
 
-// 获取单个集群
+// 获取单个服务器
 type GetServer struct {
 	httpx.MethodGet
 
@@ -22,5 +24,11 @@ func (req GetServer) Path() string {
 }
 
 func (req GetServer) Output(ctx context.Context) (result interface{}, err error) {
-	panic("implement me")
+	server, err := modules.GetServer(req.ID, storage.Database)
+	if err != nil {
+		return
+	}
+
+	result = server
+	return
 }

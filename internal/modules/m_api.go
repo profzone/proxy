@@ -126,7 +126,7 @@ func GetAPI(id uint64, db storage.Storage) (c *API, err error) {
 }
 
 func WalkAPIs(start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
-	nextID, err = db.Walk(global.Config.ApiPrefix, start, limit, func() storage.Element {
+	nextID, err = db.Walk(global.Config.ApiPrefix, nil, "id", start, limit, func() storage.Element {
 		return &API{}
 	}, walking)
 	return

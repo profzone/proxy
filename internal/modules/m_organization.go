@@ -48,7 +48,7 @@ func GetOrganization(id uint64, db storage.Storage) (c *Organization, err error)
 }
 
 func WalkOrganizations(start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
-	nextID, err = db.Walk(global.Config.OrganizationPrefix, start, limit, func() storage.Element {
+	nextID, err = db.Walk(global.Config.OrganizationPrefix, nil, "id", start, limit, func() storage.Element {
 		return &Organization{}
 	}, walking)
 	return

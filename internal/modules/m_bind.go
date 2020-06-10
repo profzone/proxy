@@ -8,6 +8,13 @@ import (
 	"longhorn/proxy/internal/storage"
 )
 
+type BindRequestBody struct {
+	// 集群ID
+	ClusterID uint64 `json:"clusterID,string,omitempty"`
+	// 服务器ID
+	ServerID uint64 `json:"serverID,string,omitempty"`
+}
+
 type Bind struct {
 	// 集群ID
 	ClusterID uint64 `json:"clusterID,string"`
@@ -45,7 +52,8 @@ func CreateBind(c *Bind, db storage.Storage) (id uint64, err error) {
 }
 
 func WalkBinds(clusterID uint64, start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
-	nextID, err = db.Walk(fmt.Sprintf("%s/%d/", global.Config.BindPrefix, clusterID), start, limit, func() storage.Element {
+	condition := storage.WithConditionKey("clusterID").Eq(clusterID)
+	nextID, err = db.Walk(global.Config.BindPrefix, condition, "clusterID", start, limit, func() storage.Element {
 		return &Bind{}
 	}, walking)
 	return

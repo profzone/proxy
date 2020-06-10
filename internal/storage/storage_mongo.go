@@ -114,7 +114,7 @@ func (s *StorageMongo) Get(prefix string, id uint64, target Element) error {
 	return result.Decode(target)
 }
 
-func (s *StorageMongo) Walk(prefix string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (nextID uint64, err error) {
+func (s *StorageMongo) Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (nextID uint64, err error) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -122,15 +122,23 @@ func (s *StorageMongo) Walk(prefix string, start uint64, limit int64, elementFac
 	ctx, _ := context.WithTimeout(context.Background(), s.timeout)
 
 	opts := options.Find()
-	opts.SetLimit(limit)
+	if limit > 0 {
+		opts.SetLimit(limit)
+	}
 	opts.SetSort(bson.D{
 		{
-			Key:   "id",
+			Key:   startField,
 			Value: -1,
 		},
 	})
-	filter := bson.D{
-		{"id", bson.M{"$gt": start}},
+	var filter = bson.D{}
+	if start != 0 {
+		filter = bson.D{
+			{startField, bson.M{"$lt": start}},
+		}
+	}
+	if condition != nil {
+		filter = append(filter, bson.E{condition.Key, condition.Val})
 	}
 
 	cursor, err := collection.Find(ctx, filter, opts)
@@ -145,7 +153,7 @@ func (s *StorageMongo) Walk(prefix string, start uint64, limit int64, elementFac
 			return 0, err
 		}
 		err = walking(element)
-		nextID = element.GetIdentity() + 1
+		nextID = element.GetIdentity() - 1
 	}
 
 	return
