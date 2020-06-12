@@ -12,7 +12,7 @@ func init() {
 	Router.Register(courier.NewRouter(GetApi{}))
 }
 
-// 获取单个集群
+// 获取单个API
 type GetApi struct {
 	httpx.MethodGet
 

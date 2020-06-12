@@ -12,7 +12,7 @@ func init() {
 	Router.Register(courier.NewRouter(UpdateApi{}))
 }
 
-// 更新集群
+// 更新API
 type UpdateApi struct {
 	httpx.MethodPatch
 	// 编号

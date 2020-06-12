@@ -12,7 +12,7 @@ func init() {
 	Router.Register(courier.NewRouter(GetApis{}))
 }
 
-// 获取所有集群
+// 获取所有API
 type GetApis struct {
 	httpx.MethodGet
 	// 分页偏移量

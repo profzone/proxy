@@ -12,7 +12,7 @@ func init() {
 	Router.Register(courier.NewRouter(DeleteApi{}))
 }
 
-// 删除集群
+// 删除API
 type DeleteApi struct {
 	httpx.MethodDelete
 	// 编号

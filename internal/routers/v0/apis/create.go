@@ -15,7 +15,7 @@ func init() {
 	Router.Register(courier.NewRouter(CreateApi{}))
 }
 
-// 创建集群
+// 创建API
 type CreateApi struct {
 	httpx.MethodPost
 	Body modules.API `name:"body" in:"body"`

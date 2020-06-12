@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/profzone/eden-framework/pkg/timelib"
 	"github.com/sony/gobreaker"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/storage"
@@ -17,9 +18,9 @@ type BreakerConf struct {
 	// Half-open状态下最多能进入的请求数量
 	MaxRequests uint32 `json:"maxRequests"`
 	// Close状态下重置内部统计的时间
-	Interval time.Duration `json:"interval"`
+	Interval timelib.DurationString `json:"interval"`
 	// Open状态下变更为Half-open状态的时间
-	Timeout time.Duration `json:"timeout"`
+	Timeout timelib.DurationString `json:"timeout"`
 }
 
 type Dispatcher struct {
@@ -29,9 +30,9 @@ type Dispatcher struct {
 	BreakerConf *BreakerConf `json:"breaker,omitempty" default:""`
 	breaker     *gobreaker.CircuitBreaker
 
-	WriteTimeout time.Duration `json:"writeTimeout" default:""`
-	ReadTimeout  time.Duration `json:"readTimeout" default:""`
-	ClusterID    uint64        `json:"clusterID,string"`
+	WriteTimeout timelib.DurationString `json:"writeTimeout" default:""`
+	ReadTimeout  timelib.DurationString `json:"readTimeout" default:""`
+	ClusterID    uint64                 `json:"clusterID,string"`
 }
 
 func (d *Dispatcher) GobDecode(data []byte) error {
@@ -45,8 +46,8 @@ func (d *Dispatcher) GobDecode(data []byte) error {
 		d.breaker = gobreaker.NewCircuitBreaker(gobreaker.Settings{
 			Name:          "",
 			MaxRequests:   d.BreakerConf.MaxRequests,
-			Interval:      d.BreakerConf.Interval,
-			Timeout:       d.BreakerConf.Timeout,
+			Interval:      time.Duration(d.BreakerConf.Interval),
+			Timeout:       time.Duration(d.BreakerConf.Timeout),
 			ReadyToTrip:   BreakerStrategyTotalFailures,
 			OnStateChange: d.breakerStateChanged,
 		})
@@ -115,10 +116,15 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 		pool.ClientPool.ReleaseClient(cli)
 	}()
 	// TODO if not set then use global config
-	cli.ReadTimeout = d.ReadTimeout
-	cli.WriteTimeout = d.WriteTimeout
+	cli.ReadTimeout = time.Duration(d.ReadTimeout)
+	cli.WriteTimeout = time.Duration(d.WriteTimeout)
 
-	resp, err := d.wrapBreakerRequest(cli, req)
+	var resp *fasthttp.Response
+	if d.breaker != nil {
+		resp, err = d.wrapBreakerRequest(cli, req)
+	} else {
+		resp, err = d.forward(cli, req)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -128,15 +134,19 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 
 func (d *Dispatcher) wrapBreakerRequest(cli *fasthttp.Client, req *fasthttp.Request) (resp *fasthttp.Response, err error) {
 	result, err := d.breaker.Execute(func() (resp interface{}, err error) {
-		response := fasthttp.AcquireResponse()
-		err = cli.Do(req, response)
-		if err != nil {
-			return nil, err
-		}
-		return response, nil
+		return d.forward(cli, req)
 	})
 	resp = result.(*fasthttp.Response)
 	return
+}
+
+func (d *Dispatcher) forward(cli *fasthttp.Client, req *fasthttp.Request) (resp *fasthttp.Response, err error) {
+	response := fasthttp.AcquireResponse()
+	err = cli.Do(req, response)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
 }
 
 func (d *Dispatcher) dispatchTarget(originRequest *fasthttp.Request, params route.Params) uint64 {

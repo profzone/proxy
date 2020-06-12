@@ -120,25 +120,37 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	wg := pool.WGPool.AcquireWG()
 	defer pool.WGPool.ReleaseWG(wg)
 
+	dispatcherResponse := make(map[*modules.Dispatcher]interface{})
 	api.WalkDispatcher(func(dispatcher *modules.Dispatcher) error {
-		wg.Add(1)
-		go func(dispatcher *modules.Dispatcher) {
-			defer wg.Done()
 
+		wg.Add(1)
+		dispatcherResponse[dispatcher] = nil
+		go func(dispatcher *modules.Dispatcher) {
+
+			defer wg.Done()
 			resp, err := dispatcher.Dispatch(ctx, params, storage.Database)
 			if err != nil {
+				dispatcherResponse[dispatcher] = err
 				return
 			}
+			dispatcherResponse[dispatcher] = resp
 			defer fasthttp.ReleaseResponse(resp)
 
-			// TODO resp fusion
 		}(dispatcher)
 
 		return nil
 	})
 	wg.Wait()
 
-	ctx.SuccessString("plain/text", "success")
+	// TODO resp fusion
+	for _, resp := range dispatcherResponse {
+		switch response := resp.(type) {
+		case error:
+			ctx.Error(response.Error(), fasthttp.StatusBadGateway)
+		case *fasthttp.Response:
+			ctx.SuccessString("plain/text", "success")
+		}
+	}
 }
 
 func (s *ReverseProxy) HandleHTTPError(ctx *fasthttp.RequestCtx, err error) {
