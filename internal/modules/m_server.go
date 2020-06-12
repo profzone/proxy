@@ -116,7 +116,7 @@ func CreateServer(c ServerContract, db storage.Storage) (id uint64, err error) {
 
 func GetServer(id uint64, db storage.Storage) (c ServerContract, err error) {
 	c = &GeneralServer{}
-	err = db.Get(global.Config.ServerPrefix, id, c)
+	err = db.Get(global.Config.ServerPrefix, "server.id", id, c)
 	return
 }
 
@@ -128,12 +128,14 @@ func WalkServers(start uint64, limit int64, walking func(e storage.Element) erro
 }
 
 func DeleteServer(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ServerPrefix, fmt.Sprintf("%d", id))
+	condition := storage.WithConditionKey("server.id").Eq(id)
+	err = db.Delete(global.Config.ServerPrefix, condition)
 	return
 }
 
 func UpdateServer(c ServerContract, db storage.Storage) (err error) {
-	err = db.Update(global.Config.ServerPrefix, c)
+	condition := storage.WithConditionKey("server.id").Eq(c.GetIdentity())
+	err = db.Update(global.Config.ServerPrefix, condition, c)
 	return
 }
 
@@ -157,7 +159,7 @@ func (v *WebServiceServer) Unmarshal(data []byte) (err error) {
 
 func GetWebServiceServer(id uint64, db storage.Storage) (c *WebServiceServer, err error) {
 	c = &WebServiceServer{}
-	err = db.Get(global.Config.ServerPrefix, id, c)
+	err = db.Get(global.Config.ServerPrefix, "server.id", id, c)
 	return
 }
 
@@ -195,7 +197,7 @@ func (v *DatabaseServer) Unmarshal(data []byte) (err error) {
 
 func GetDatabaseServer(id uint64, db storage.Storage) (c *DatabaseServer, err error) {
 	c = &DatabaseServer{}
-	err = db.Get(global.Config.ServerPrefix, id, c)
+	err = db.Get(global.Config.ServerPrefix, "server.id", id, c)
 	return
 }
 

@@ -43,7 +43,7 @@ func CreateOrganization(c *Organization, db storage.Storage) (id uint64, err err
 }
 
 func GetOrganization(id uint64, db storage.Storage) (c *Organization, err error) {
-	err = db.Get(global.Config.OrganizationPrefix, id, c)
+	err = db.Get(global.Config.OrganizationPrefix, "id", id, c)
 	return
 }
 
@@ -54,12 +54,13 @@ func WalkOrganizations(start uint64, limit int64, walking func(e storage.Element
 	return
 }
 
-func UpdateOrganization(c *Organization, db storage.Storage) (err error) {
-	err = db.Update(global.Config.OrganizationPrefix, c)
+func UpdateOrganization(c *Organization, condition *storage.Condition, db storage.Storage) (err error) {
+	err = db.Update(global.Config.OrganizationPrefix, condition, c)
 	return
 }
 
 func DeleteOrganization(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.OrganizationPrefix, fmt.Sprintf("%d", id))
+	condition := storage.WithConditionKey("id").Eq(fmt.Sprintf("%d", id))
+	err = db.Delete(global.Config.OrganizationPrefix, condition)
 	return
 }

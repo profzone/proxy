@@ -13,6 +13,15 @@ import (
 	"time"
 )
 
+type BreakerConf struct {
+	// Half-open状态下最多能进入的请求数量
+	MaxRequests uint32 `json:"maxRequests"`
+	// Close状态下重置内部统计的时间
+	Interval time.Duration `json:"interval"`
+	// Open状态下变更为Half-open状态的时间
+	Timeout time.Duration `json:"timeout"`
+}
+
 type Dispatcher struct {
 	// 路由
 	Router *Router `json:"router,omitempty" default:""`

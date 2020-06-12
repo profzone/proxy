@@ -24,6 +24,6 @@ func (req DeleteServer) Path() string {
 }
 
 func (req DeleteServer) Output(ctx context.Context) (result interface{}, err error) {
-	err = modules.DeleteCluster(req.ID, storage.Database)
+	err = modules.DeleteServer(req.ID, storage.Database)
 	return
 }

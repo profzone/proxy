@@ -13,15 +13,6 @@ import (
 	"time"
 )
 
-type BreakerConf struct {
-	// Half-open状态下最多能进入的请求数量
-	MaxRequests uint32
-	// Close状态下重置内部统计的时间
-	Interval time.Duration
-	// Open状态下变更为Half-open状态的时间
-	Timeout time.Duration
-}
-
 type APIContainer map[uint64]*API
 
 func (c APIContainer) Add(api *API) {
@@ -121,7 +112,7 @@ func CreateAPI(c *API, db storage.Storage) (id uint64, err error) {
 
 func GetAPI(id uint64, db storage.Storage) (c *API, err error) {
 	c = &API{}
-	err = db.Get(global.Config.ApiPrefix, id, c)
+	err = db.Get(global.Config.ApiPrefix, "id", id, c)
 	return
 }
 
@@ -133,11 +124,13 @@ func WalkAPIs(start uint64, limit int64, walking func(e storage.Element) error, 
 }
 
 func UpdateAPI(c *API, db storage.Storage) (err error) {
-	err = db.Update(global.Config.ApiPrefix, c)
+	condition := storage.WithConditionKey("id").Eq(c.ID)
+	err = db.Update(global.Config.ApiPrefix, condition, c)
 	return
 }
 
 func DeleteAPI(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ApiPrefix, fmt.Sprintf("%d", id))
+	condition := storage.WithConditionKey("id").Eq(fmt.Sprintf("%d", id))
+	err = db.Delete(global.Config.ApiPrefix, condition)
 	return
 }

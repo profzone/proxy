@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"longhorn/proxy/internal/global"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -60,7 +59,7 @@ func (s *StorageMongo) Create(prefix string, e Element) (uint64, error) {
 	return s.putElement(prefix, e)
 }
 
-func (s *StorageMongo) Update(prefix string, e Element) error {
+func (s *StorageMongo) Update(prefix string, condition *Condition, e Element) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -69,33 +68,28 @@ func (s *StorageMongo) Update(prefix string, e Element) error {
 
 	opts := options.Update()
 	filter := bson.M{
-		"id": e.GetIdentity(),
+		condition.Key: condition.Val,
 	}
 	_, err := collection.UpdateOne(ctx, filter, e, opts)
 	return err
 }
 
-func (s *StorageMongo) Delete(prefix string, id string) error {
+func (s *StorageMongo) Delete(prefix string, condition *Condition) error {
 	s.Lock()
 	defer s.Unlock()
-
-	identity, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return err
-	}
 
 	collection := s.db.Collection(prefix)
 	ctx, _ := context.WithTimeout(context.Background(), s.timeout)
 
 	opts := options.Delete()
 	filter := bson.M{
-		"id": identity,
+		condition.Key: condition.Val,
 	}
-	_, err = collection.DeleteOne(ctx, filter, opts)
+	_, err := collection.DeleteOne(ctx, filter, opts)
 	return err
 }
 
-func (s *StorageMongo) Get(prefix string, id uint64, target Element) error {
+func (s *StorageMongo) Get(prefix string, idField string, idVal uint64, target Element) error {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -104,7 +98,7 @@ func (s *StorageMongo) Get(prefix string, id uint64, target Element) error {
 
 	opts := options.FindOne()
 	filter := bson.M{
-		"id": id,
+		idField: idVal,
 	}
 	result := collection.FindOne(ctx, filter, opts)
 	if result.Err() != nil {

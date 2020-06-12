@@ -9,9 +9,9 @@ import (
 type Storage interface {
 	Close() error
 	Create(prefix string, e Element) (uint64, error)
-	Update(prefix string, e Element) error
-	Delete(prefix string, id string) error
-	Get(prefix string, id uint64, target Element) error
+	Update(prefix string, condition *Condition, e Element) error
+	Delete(prefix string, condition *Condition) error
+	Get(prefix string, idField string, idVal uint64, target Element) error
 	Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error)
 }
 
@@ -37,16 +37,16 @@ func (d *Delegate) Create(prefix string, e Element) (uint64, error) {
 	return d.driver.Create(prefix, e)
 }
 
-func (d *Delegate) Update(prefix string, e Element) error {
-	return d.driver.Update(prefix, e)
+func (d *Delegate) Update(prefix string, condition *Condition, e Element) error {
+	return d.driver.Update(prefix, condition, e)
 }
 
-func (d *Delegate) Delete(prefix string, id string) error {
-	return d.driver.Delete(prefix, id)
+func (d *Delegate) Delete(prefix string, condition *Condition) error {
+	return d.driver.Delete(prefix, condition)
 }
 
-func (d *Delegate) Get(prefix string, id uint64, target Element) error {
-	return d.driver.Get(prefix, id, target)
+func (d *Delegate) Get(prefix string, idField string, idVal uint64, target Element) error {
+	return d.driver.Get(prefix, idField, idVal, target)
 }
 
 func (d *Delegate) Walk(prefix string, condition *Condition, startField string, start uint64, limit int64, elementFactory func() Element, walking func(e Element) error) (uint64, error) {

@@ -64,7 +64,7 @@ func CreateCluster(c *Cluster, db storage.Storage) (id uint64, err error) {
 
 func GetCluster(id uint64, db storage.Storage) (c *Cluster, err error) {
 	c = &Cluster{}
-	err = db.Get(global.Config.ClusterPrefix, id, c)
+	err = db.Get(global.Config.ClusterPrefix, "id", id, c)
 	return
 }
 
@@ -76,11 +76,13 @@ func WalkClusters(start uint64, limit int64, walking func(e storage.Element) err
 }
 
 func UpdateCluster(c *Cluster, db storage.Storage) (err error) {
-	err = db.Update(global.Config.ClusterPrefix, c)
+	condition := storage.WithConditionKey("id").Eq(c.ID)
+	err = db.Update(global.Config.ClusterPrefix, condition, c)
 	return
 }
 
 func DeleteCluster(id uint64, db storage.Storage) (err error) {
-	err = db.Delete(global.Config.ClusterPrefix, fmt.Sprintf("%d", id))
+	condition := storage.WithConditionKey("id").Eq(fmt.Sprintf("%d", id))
+	err = db.Delete(global.Config.ClusterPrefix, condition)
 	return
 }

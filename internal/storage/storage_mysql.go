@@ -40,15 +40,15 @@ func (s *StorageMysql) Create(prefix string, e Element) (uint64, error) {
 	panic("implement me")
 }
 
-func (s *StorageMysql) Update(prefix string, e Element) error {
+func (s *StorageMysql) Update(prefix string, condition *Condition, e Element) error {
 	panic("implement me")
 }
 
-func (s *StorageMysql) Delete(prefix string, id string) error {
+func (s *StorageMysql) Delete(prefix string, condition *Condition) error {
 	panic("implement me")
 }
 
-func (s *StorageMysql) Get(prefix string, id uint64, target Element) error {
+func (s *StorageMysql) Get(prefix string, idField string, idVal uint64, target Element) error {
 	panic("implement me")
 }
 

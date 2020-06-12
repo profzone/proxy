@@ -59,18 +59,8 @@ func WalkBinds(clusterID uint64, start uint64, limit int64, walking func(e stora
 	return
 }
 
-func UpdateBind(c *Bind, db storage.Storage) (err error) {
-	err = db.Update(global.Config.BindPrefix, c)
-	return
-}
-
 func DeleteBind(clusterID uint64, serverID uint64, db storage.Storage) (err error) {
-	var prefix string
-	if serverID == 0 {
-		prefix = fmt.Sprintf("%d/", clusterID)
-	} else {
-		prefix = fmt.Sprintf("%d/%d", clusterID, serverID)
-	}
-	err = db.Delete(global.Config.BindPrefix, prefix)
+	condition := storage.WithConditionKey("clusterID").Eq(clusterID)
+	err = db.Delete(global.Config.BindPrefix, condition)
 	return
 }

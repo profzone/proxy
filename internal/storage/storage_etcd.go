@@ -46,7 +46,7 @@ func (s *StorageEtcd) Create(prefix string, e Element) (uint64, error) {
 	return s.putElement(prefix, e)
 }
 
-func (s *StorageEtcd) Update(prefix string, e Element) error {
+func (s *StorageEtcd) Update(prefix string, condition *Condition, e Element) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -54,18 +54,24 @@ func (s *StorageEtcd) Update(prefix string, e Element) error {
 	return err
 }
 
-func (s *StorageEtcd) Delete(prefix string, id string) error {
+func (s *StorageEtcd) Delete(prefix string, condition *Condition) error {
 	s.Lock()
 	defer s.Unlock()
 
+	var id string
+	if str, ok := condition.Val.(string); ok {
+		id = str
+	} else {
+		id = fmt.Sprintf("%v", condition.Val)
+	}
 	return s.deleteElement(prefix, id)
 }
 
-func (s *StorageEtcd) Get(prefix string, id uint64, target Element) error {
+func (s *StorageEtcd) Get(prefix string, idField string, idVal uint64, target Element) error {
 	s.RLock()
 	defer s.RUnlock()
 
-	err := s.getElement(prefix, id, target)
+	err := s.getElement(prefix, idVal, target)
 	return err
 }
 
@@ -76,6 +82,7 @@ func (s *StorageEtcd) Walk(prefix string, condition *Condition, startField strin
 	if condition == nil {
 		condition = WithConditionKey("").Eq(0)
 	}
+	// TODO optimize condition
 	prefix = fmt.Sprintf("%s/%d", prefix, condition.Val)
 	nextStartID, err := s.getElements(prefix, start, limit, elementFactory, walking)
 
