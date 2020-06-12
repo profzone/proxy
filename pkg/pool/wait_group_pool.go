@@ -15,7 +15,7 @@ type WaitGroupPool struct {
 }
 
 func (p *WaitGroupPool) AcquireWG() *sync.WaitGroup {
-	value := ClientPool.Get()
+	value := WGPool.Get()
 	if value == nil {
 		return &sync.WaitGroup{}
 	}
@@ -24,6 +24,6 @@ func (p *WaitGroupPool) AcquireWG() *sync.WaitGroup {
 
 func (p *WaitGroupPool) ReleaseWG(c *sync.WaitGroup) {
 	if c != nil {
-		ClientPool.Put(c)
+		WGPool.Put(c)
 	}
 }

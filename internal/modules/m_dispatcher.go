@@ -8,6 +8,7 @@ import (
 	"github.com/profzone/eden-framework/pkg/timelib"
 	"github.com/sony/gobreaker"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
 	"longhorn/proxy/pkg/route"
@@ -63,9 +64,22 @@ func (d *Dispatcher) breakerStateChanged(name string, from gobreaker.State, to g
 func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db storage.Storage) (*fasthttp.Response, error) {
 	clusterID := d.dispatchTarget(&ctx.Request, params)
 
-	cluster, err := GetCluster(clusterID, db)
-	if err != nil {
-		return nil, err
+	var (
+		cluster *Cluster
+		err     error
+	)
+	obj, ok := global.ClusterContainer.Get(fmt.Sprintf("%d", clusterID))
+	if !ok {
+		cluster, err = GetCluster(clusterID, db)
+		cluster.InitLoadBalancer()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		cluster, ok = obj.(*Cluster)
+		if !ok {
+			return nil, fmt.Errorf("cluster %d can not be initialized", clusterID)
+		}
 	}
 
 	servers := make([]ServerContract, 0)
@@ -102,7 +116,7 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 		}
 	}
 
-	lb := cluster.GetLoadBalance()
+	lb := cluster.GetLoadBalancer()
 	if lb == nil {
 		return nil, fmt.Errorf("cluster did not set load balance type")
 	}

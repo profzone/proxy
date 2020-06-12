@@ -37,6 +37,7 @@ require (
 	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/johnnyeven/libtools v0.0.0-20191126065708-61829c1adf46 // indirect
 	github.com/juju/ratelimit v1.0.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/profzone/eden-framework v0.0.0-20200107094924-5879c460b9aa
 	github.com/sirupsen/logrus v1.4.2
 	github.com/sony/gobreaker v0.4.1

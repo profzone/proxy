@@ -2,9 +2,11 @@ package gateway
 
 import (
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
+	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
@@ -27,14 +29,14 @@ type ReverseProxy struct {
 	ReverseProxyConf
 	server       *fasthttp.Server
 	routes       *route.Routes
-	apiContainer modules.APIContainer
+	apiContainer *cache.Cache
 }
 
 func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
 	return &ReverseProxy{
 		ReverseProxyConf: conf,
 		routes:           route.NewRoutes(),
-		apiContainer:     modules.APIContainer{},
+		apiContainer:     cache.New(cache.NoExpiration, cache.NoExpiration),
 	}
 }
 
@@ -44,6 +46,10 @@ func (s *ReverseProxy) Routes() *route.Routes {
 
 func (s *ReverseProxy) Start() error {
 	err := s.initRoutes()
+	if err != nil {
+		return err
+	}
+	err = s.initClusters()
 	if err != nil {
 		return err
 	}
@@ -63,8 +69,17 @@ func (s *ReverseProxy) initRoutes() error {
 		if err != nil {
 			return err
 		}
-		s.apiContainer.Add(a)
-		return nil
+		return s.apiContainer.Add(fmt.Sprintf("%d", a.ID), a, cache.DefaultExpiration)
+	}, storage.Database)
+	return err
+}
+
+func (s *ReverseProxy) initClusters() error {
+	global.ClusterContainer = cache.New(5*time.Minute, 10*time.Minute)
+	_, err := modules.WalkClusters(0, -1, func(e storage.Element) error {
+		c := e.(*modules.Cluster)
+		c.InitLoadBalancer()
+		return global.ClusterContainer.Add(fmt.Sprintf("%d", c.ID), c, cache.DefaultExpiration)
 	}, storage.Database)
 	return err
 }
@@ -93,9 +108,14 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 
-	api := s.apiContainer.Get(apiID)
-	if api == nil {
+	obj, ok := s.apiContainer.Get(fmt.Sprintf("%d", apiID))
+	if !ok {
 		ctx.Error(fmt.Sprintf("apiID %d not found", apiID), fasthttp.StatusInternalServerError)
+		return
+	}
+	api, ok := obj.(*modules.API)
+	if !ok {
+		ctx.Error(fmt.Sprintf("apiID %d can not be init", apiID), fasthttp.StatusInternalServerError)
 		return
 	}
 
