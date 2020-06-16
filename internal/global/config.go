@@ -1,7 +1,6 @@
 package global
 
 import (
-	"github.com/patrickmn/go-cache"
 	"github.com/profzone/eden-framework/pkg/courier/transport_grpc"
 	"github.com/profzone/eden-framework/pkg/courier/transport_http"
 	"longhorn/proxy/internal/constants/enum"
@@ -84,5 +83,3 @@ var Config = struct {
 		StepBits:   12,
 	},
 }
-
-var ClusterContainer *cache.Cache

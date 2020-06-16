@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
-	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
@@ -27,16 +26,14 @@ type ReverseProxyConf struct {
 
 type ReverseProxy struct {
 	ReverseProxyConf
-	server       *fasthttp.Server
-	routes       *route.Routes
-	apiContainer *cache.Cache
+	server *fasthttp.Server
+	routes *route.Routes
 }
 
 func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
 	return &ReverseProxy{
 		ReverseProxyConf: conf,
 		routes:           route.NewRoutes(),
-		apiContainer:     cache.New(cache.NoExpiration, cache.NoExpiration),
 	}
 }
 
@@ -69,17 +66,16 @@ func (s *ReverseProxy) initRoutes() error {
 		if err != nil {
 			return err
 		}
-		return s.apiContainer.Add(fmt.Sprintf("%d", a.ID), a, cache.DefaultExpiration)
+		return modules.APIContainer.AddAPI(a, cache.DefaultExpiration)
 	}, storage.Database)
 	return err
 }
 
 func (s *ReverseProxy) initClusters() error {
-	global.ClusterContainer = cache.New(5*time.Minute, 10*time.Minute)
 	_, err := modules.WalkClusters(0, -1, func(e storage.Element) error {
 		c := e.(*modules.Cluster)
 		c.InitLoadBalancer()
-		return global.ClusterContainer.Add(fmt.Sprintf("%d", c.ID), c, cache.DefaultExpiration)
+		return modules.ClusterContainer.AddCluster(c, cache.DefaultExpiration)
 	}, storage.Database)
 	return err
 }
@@ -108,14 +104,9 @@ func (s *ReverseProxy) HandleHTTP(ctx *fasthttp.RequestCtx) {
 	}
 	logrus.Debugf("[%s] %s matched api: %d with params: %v", method, path, apiID, params)
 
-	obj, ok := s.apiContainer.Get(fmt.Sprintf("%d", apiID))
+	api, ok := modules.APIContainer.GetAPI(apiID)
 	if !ok {
 		ctx.Error(fmt.Sprintf("apiID %d not found", apiID), fasthttp.StatusInternalServerError)
-		return
-	}
-	api, ok := obj.(*modules.API)
-	if !ok {
-		ctx.Error(fmt.Sprintf("apiID %d can not be init", apiID), fasthttp.StatusInternalServerError)
 		return
 	}
 

@@ -5,10 +5,10 @@ import (
 	"encoding/gob"
 	"fmt"
 	"github.com/jinzhu/copier"
+	"github.com/patrickmn/go-cache"
 	"github.com/profzone/eden-framework/pkg/timelib"
 	"github.com/sony/gobreaker"
 	"github.com/valyala/fasthttp"
-	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
 	"longhorn/proxy/pkg/route"
@@ -67,19 +67,16 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	var (
 		cluster *Cluster
 		err     error
+		exist   bool
 	)
-	obj, ok := global.ClusterContainer.Get(fmt.Sprintf("%d", clusterID))
-	if !ok {
+	cluster, exist = ClusterContainer.GetCluster(clusterID)
+	if !exist {
 		cluster, err = GetCluster(clusterID, db)
 		cluster.InitLoadBalancer()
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		cluster, ok = obj.(*Cluster)
-		if !ok {
-			return nil, fmt.Errorf("cluster %d can not be initialized", clusterID)
-		}
+		_ = ClusterContainer.AddCluster(cluster, cache.DefaultExpiration)
 	}
 
 	servers := make([]ServerContract, 0)
