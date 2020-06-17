@@ -1,19 +1,9 @@
 package global
 
 import (
-	"github.com/profzone/eden-framework/pkg/courier/transport_grpc"
-	"github.com/profzone/eden-framework/pkg/courier/transport_http"
 	"longhorn/proxy/internal/constants/enum"
 	"time"
 )
-
-type SnowflakeConfig struct {
-	Epoch      int64
-	BaseNodeID int64
-	NodeCount  int64
-	NodeBits   uint8
-	StepBits   uint8
-}
 
 type DBConfig struct {
 	DBType             enum.DbType
@@ -31,10 +21,6 @@ type DBConfig struct {
 }
 
 var Config = struct {
-	// administrator
-	GRPCServer transport_grpc.ServeGRPC
-	HTTPServer transport_http.ServeHTTP
-
 	// proxying
 	Name            string
 	ListenAddr      string
@@ -45,18 +31,7 @@ var Config = struct {
 
 	// db
 	DBConfig
-
-	// id generation
-	SnowflakeConfig
 }{
-	GRPCServer: transport_grpc.ServeGRPC{
-		Port: 8900,
-	},
-	HTTPServer: transport_http.ServeHTTP{
-		Port:     8001,
-		WithCORS: true,
-	},
-
 	Name:            "longhorn Proxy Server",
 	ListenAddr:      "0.0.0.0:8000",
 	ReadTimeout:     10 * time.Second,
@@ -73,13 +48,5 @@ var Config = struct {
 		ApiPrefix:          "apis",
 		RouterPrefix:       "routers",
 		OrganizationPrefix: "organizations",
-	},
-
-	SnowflakeConfig: SnowflakeConfig{
-		Epoch:      1288351723598,
-		BaseNodeID: 1,
-		NodeCount:  100,
-		NodeBits:   10,
-		StepBits:   12,
 	},
 }

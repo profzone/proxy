@@ -5,9 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/gateway"
 	"longhorn/proxy/internal/global"
-	"longhorn/proxy/internal/routers"
 	"longhorn/proxy/internal/storage"
-	"longhorn/proxy/pkg"
 )
 
 func main() {
@@ -31,13 +29,7 @@ func main() {
 }
 
 func runner(app *application.Application) error {
-	// init database
-	pkg.Generator = pkg.NewSnowflake(global.Config.SnowflakeConfig)
 	storage.Database.Init(global.Config.DBConfig)
-
-	// start administrator server
-	go global.Config.GRPCServer.Serve(routers.RootRouter)
-	go global.Config.HTTPServer.Serve(routers.RootRouter)
 
 	// start gateway server
 	gateway.APIServer = gateway.CreateReverseProxy(gateway.ReverseProxyConf{

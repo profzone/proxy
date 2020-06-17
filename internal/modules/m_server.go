@@ -7,7 +7,6 @@ import (
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
-	"longhorn/proxy/pkg"
 )
 
 type ServerRequestBody struct {
@@ -101,19 +100,6 @@ func (v *Server) GetType() enum.ServerType {
 	return v.ServerType
 }
 
-func CreateServer(c ServerContract, db storage.Storage) (id uint64, err error) {
-	if c.GetIdentity() == 0 {
-		id, err = pkg.Generator.GenerateUniqueID()
-		if err != nil {
-			return
-		}
-		c.SetIdentity(id)
-	}
-
-	id, err = db.Create(global.Config.ServerPrefix, c)
-	return
-}
-
 func GetServer(id uint64, db storage.Storage) (c ServerContract, err error) {
 	c = &GeneralServer{}
 	err = db.Get(global.Config.ServerPrefix, "server.id", id, c)
@@ -124,18 +110,6 @@ func WalkServers(start uint64, limit int64, walking func(e storage.Element) erro
 	nextID, err = db.Walk(global.Config.ServerPrefix, nil, "server.id", start, limit, func() storage.Element {
 		return &GeneralServer{}
 	}, walking)
-	return
-}
-
-func DeleteServer(id uint64, db storage.Storage) (err error) {
-	condition := storage.WithConditionKey("server.id").Eq(id)
-	err = db.Delete(global.Config.ServerPrefix, condition)
-	return
-}
-
-func UpdateServer(c ServerContract, db storage.Storage) (err error) {
-	condition := storage.WithConditionKey("server.id").Eq(c.GetIdentity())
-	err = db.Update(global.Config.ServerPrefix, condition, c)
 	return
 }
 

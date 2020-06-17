@@ -13,13 +13,13 @@ func TestScanRule(t *testing.T) {
 	req.URI().QueryArgs().Add("countStr", "d")
 
 	condition1 := "query.version>=1,query.count<10"
-	cond1 := newRouterCondition(condition1, nil)
+	cond1 := newRouterCondition(condition1)
 	if !cond1.Match(req) {
 		t.Errorf("!cond1.Match(req)")
 	}
 
 	condition2 := "query.versionStr@>=a,query.countStr@<f"
-	cond2 := newRouterCondition(condition2, nil)
+	cond2 := newRouterCondition(condition2)
 	if !cond2.Match(req) {
 		t.Errorf("!cond2.Match(req)")
 	}
