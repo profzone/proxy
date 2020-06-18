@@ -1,8 +1,6 @@
 package models
 
 import (
-	"bytes"
-	"encoding/gob"
 	"github.com/profzone/eden-framework/pkg/timelib"
 )
 
@@ -24,10 +22,4 @@ type Dispatcher struct {
 	WriteTimeout timelib.DurationString `json:"writeTimeout" default:""`
 	ReadTimeout  timelib.DurationString `json:"readTimeout" default:""`
 	ClusterID    uint64                 `json:"clusterID,string"`
-}
-
-func (d *Dispatcher) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-	err := dec.Decode(d)
-	return err
 }
