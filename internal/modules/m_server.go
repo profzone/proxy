@@ -14,6 +14,17 @@ type ServerContract interface {
 }
 
 func NewServerContract(s models.ServerContract) ServerContract {
+	if gs, ok := s.(*models.GeneralServer); ok {
+		return &WebServiceServer{
+			Server: Server{
+				ID:         gs.ID,
+				Name:       gs.Name,
+				Host:       gs.Host,
+				Port:       gs.Port,
+				ServerType: gs.ServerType,
+			},
+		}
+	}
 	switch s.GetType() {
 	case enum.SERVER_TYPE__WEB_SERVICE:
 		if ws, ok := s.(*models.WebServiceServer); ok {

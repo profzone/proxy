@@ -91,9 +91,15 @@ func (s *ReverseProxy) initRoutes() error {
 
 func (s *ReverseProxy) initClusters() error {
 	_, err := models.WalkClusters(0, -1, func(e storage.Element) error {
+
 		model := e.(*models.Cluster)
-		cluster := modules.NewCluster(model)
+		cluster, err := modules.NewClusterAndServers(model)
+		if err != nil {
+			return err
+		}
+
 		return modules.ClusterContainer.AddCluster(cluster, cache.DefaultExpiration)
+
 	}, storage.Database)
 	return err
 }

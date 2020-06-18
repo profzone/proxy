@@ -73,7 +73,10 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	cluster, exist = ClusterContainer.GetCluster(clusterID)
 	if !exist {
 		model, err := models.GetCluster(clusterID, db)
-		cluster = NewCluster(model)
+		if err != nil {
+			return nil, err
+		}
+		cluster, err = NewClusterAndServers(model)
 		if err != nil {
 			return nil, err
 		}
