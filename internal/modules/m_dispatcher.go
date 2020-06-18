@@ -9,6 +9,7 @@ import (
 	"github.com/profzone/eden-framework/pkg/timelib"
 	"github.com/sony/gobreaker"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/internal/models"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
 	"longhorn/proxy/pkg/route"
@@ -71,29 +72,12 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 	)
 	cluster, exist = ClusterContainer.GetCluster(clusterID)
 	if !exist {
-		cluster, err = GetCluster(clusterID, db)
-		cluster.InitLoadBalancer()
+		model, err := models.GetCluster(clusterID, db)
+		cluster = NewCluster(model)
 		if err != nil {
 			return nil, err
 		}
 		_ = ClusterContainer.AddCluster(cluster, cache.DefaultExpiration)
-	}
-
-	servers := make([]ServerContract, 0)
-	serverMap := make(map[uint64]ServerContract)
-	_, err = WalkBinds(clusterID, 0, -1, func(e storage.Element) error {
-		bind := e.(*Bind)
-		server, err := GetServer(bind.ServerID, db)
-		if err != nil {
-			return err
-		}
-
-		servers = append(servers, server)
-		serverMap[server.GetIdentity()] = server
-		return nil
-	}, db)
-	if err != nil {
-		return nil, err
 	}
 
 	req := fasthttp.AcquireRequest()
@@ -113,13 +97,10 @@ func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db 
 		}
 	}
 
-	lb := cluster.GetLoadBalancer()
-	if lb == nil {
-		return nil, fmt.Errorf("cluster did not set load balance type")
+	target := cluster.ApplyLoadBalance(*req)
+	if target == nil {
+		return nil, fmt.Errorf("cluster did not set load balance")
 	}
-
-	serverID := lb.Apply(ctx.Request, servers)
-	target := serverMap[serverID]
 	req.SetHost(target.GetHost())
 
 	cli := pool.ClientPool.AcquireClient()

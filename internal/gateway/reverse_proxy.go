@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
+	"longhorn/proxy/internal/models"
 	"longhorn/proxy/internal/modules"
 	"longhorn/proxy/internal/storage"
 	"longhorn/proxy/pkg/pool"
@@ -89,10 +90,10 @@ func (s *ReverseProxy) initRoutes() error {
 }
 
 func (s *ReverseProxy) initClusters() error {
-	_, err := modules.WalkClusters(0, -1, func(e storage.Element) error {
-		c := e.(*modules.Cluster)
-		c.InitLoadBalancer()
-		return modules.ClusterContainer.AddCluster(c, cache.DefaultExpiration)
+	_, err := models.WalkClusters(0, -1, func(e storage.Element) error {
+		model := e.(*models.Cluster)
+		cluster := modules.NewCluster(model)
+		return modules.ClusterContainer.AddCluster(cluster, cache.DefaultExpiration)
 	}, storage.Database)
 	return err
 }

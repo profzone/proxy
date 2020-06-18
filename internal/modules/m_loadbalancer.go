@@ -6,7 +6,7 @@ import (
 )
 
 type LoadBalancer interface {
-	Apply(req fasthttp.Request, servers []ServerContract) uint64
+	Apply(req fasthttp.Request, servers []ServerContract) ServerContract
 }
 
 // RoundRobin round robin loadBalance impl
@@ -25,13 +25,16 @@ func NewRoundRobin() LoadBalancer {
 }
 
 // Select select a server from servers using RoundRobin
-func (rr RoundRobin) Apply(req fasthttp.Request, servers []ServerContract) uint64 {
+func (rr RoundRobin) Apply(req fasthttp.Request, servers []ServerContract) ServerContract {
 	l := uint64(len(servers))
 
 	if 0 >= l {
-		return 0
+		return nil
 	}
 
 	target := servers[int(atomic.AddUint64(rr.ops, 1)%l)]
-	return target.GetIdentity()
+	if target == nil {
+		return nil
+	}
+	return target
 }
