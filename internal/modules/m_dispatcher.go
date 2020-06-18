@@ -54,10 +54,6 @@ func breakerStateChanged(name string, from gobreaker.State, to gobreaker.State) 
 
 }
 
-func (d *Dispatcher) breakerStateChanged(name string, from gobreaker.State, to gobreaker.State) {
-
-}
-
 func (d *Dispatcher) Dispatch(ctx *fasthttp.RequestCtx, params route.Params, db storage.Storage) (*fasthttp.Response, error) {
 	clusterID := d.dispatchTarget(&ctx.Request, params)
 

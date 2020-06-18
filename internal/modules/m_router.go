@@ -1,8 +1,6 @@
 package modules
 
 import (
-	"bytes"
-	"encoding/gob"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/models"
 	"longhorn/proxy/pkg/route"
@@ -28,18 +26,6 @@ func NewRouter(model *models.Router) *Router {
 		ClusterID:      model.ClusterID,
 		conditions:     newRouterCondition(model.Condition),
 	}
-}
-
-func (r *Router) GobDecode(data []byte) error {
-	reader := bytes.NewReader(data)
-	dec := gob.NewDecoder(reader)
-	err := dec.Decode(r)
-	if err != nil {
-		return err
-	}
-
-	r.conditions = newRouterCondition(r.Condition)
-	return nil
 }
 
 func (r *Router) Match(req *fasthttp.Request, params route.Params) bool {
