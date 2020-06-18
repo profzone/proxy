@@ -3,6 +3,7 @@ package gateway
 import (
 	"fmt"
 	"github.com/patrickmn/go-cache"
+	"github.com/profzone/eden-framework/pkg/context"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
@@ -26,13 +27,16 @@ type ReverseProxyConf struct {
 
 type ReverseProxy struct {
 	ReverseProxyConf
+	ctx    *context.WaitStopContext
 	server *fasthttp.Server
 	routes *route.Routes
 }
 
-func CreateReverseProxy(conf ReverseProxyConf) *ReverseProxy {
+func CreateReverseProxy(conf ReverseProxyConf, ctx *context.WaitStopContext) *ReverseProxy {
+	ctx.Add(1)
 	return &ReverseProxy{
 		ReverseProxyConf: conf,
+		ctx:              ctx,
 		routes:           route.NewRoutes(),
 	}
 }
@@ -50,6 +54,19 @@ func (s *ReverseProxy) Start() error {
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		select {
+		case <-s.ctx.Done():
+			err := s.Close()
+			if err != nil {
+				logrus.Errorf("reverse proxy shutdown with error: %v", err)
+			} else {
+				logrus.Info("reverse proxy connection shutdown")
+			}
+		}
+		s.ctx.Finish()
+	}()
 
 	logrus.Infof("reverse proxy start listen on %s", s.ListenAddr)
 	return s.startHTTP()

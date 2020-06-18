@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/profzone/eden-framework/pkg/context"
 	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/constants/enum"
 	"longhorn/proxy/internal/global"
@@ -57,17 +58,18 @@ func (d *Delegate) Close() error {
 	return d.driver.Close()
 }
 
-func (d *Delegate) Init(dbConfig global.DBConfig) {
+func (d *Delegate) Init(dbConfig global.DBConfig, ctx *context.WaitStopContext) {
 	var err error
 	if dbConfig.DBType == enum.DB_TYPE__ETCD {
-		d.driver, err = NewDBEtcd(dbConfig)
+		d.driver, err = NewDBEtcd(dbConfig, ctx)
 	} else if dbConfig.DBType == enum.DB_TYPE__MYSQL {
-		d.driver, err = NewDBMysql(dbConfig)
+		d.driver, err = NewDBMysql(dbConfig, ctx)
 	} else if dbConfig.DBType == enum.DB_TYPE__MONGODB {
-		d.driver, err = NewDBMongo(dbConfig)
+		d.driver, err = NewDBMongo(dbConfig, ctx)
 	}
 
 	if err != nil {
 		logrus.Panic(err)
 	}
+	ctx.Add(1)
 }

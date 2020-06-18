@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
+	context2 "github.com/profzone/eden-framework/pkg/context"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -20,10 +22,14 @@ type StorageMongo struct {
 	timeout time.Duration
 	client  *mongo.Client
 	db      *mongo.Database
+
+	ctx *context2.WaitStopContext
 }
 
-func NewDBMongo(config global.DBConfig) (*StorageMongo, error) {
-	db := &StorageMongo{}
+func NewDBMongo(config global.DBConfig, ctx *context2.WaitStopContext) (*StorageMongo, error) {
+	db := &StorageMongo{
+		ctx: ctx,
+	}
 	err := db.init(config)
 	return db, err
 }
@@ -44,6 +50,19 @@ func (s *StorageMongo) init(config global.DBConfig) error {
 	s.client = client
 	s.db = client.Database(config.DatabaseName)
 	s.timeout = config.ConnectionTimeout
+
+	go func() {
+		select {
+		case <-s.ctx.Done():
+			err := s.Close()
+			if err != nil {
+				logrus.Errorf("mongodb shutdown with error: %v", err)
+			} else {
+				logrus.Info("mongodb connection shutdown")
+			}
+		}
+		s.ctx.Finish()
+	}()
 	return nil
 }
 

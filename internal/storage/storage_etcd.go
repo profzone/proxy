@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
+	context2 "github.com/profzone/eden-framework/pkg/context"
+	"github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/clientv3"
 	"longhorn/proxy/internal/global"
 	"math"
@@ -12,6 +14,7 @@ import (
 
 type StorageEtcd struct {
 	sync.RWMutex
+	ctx *context2.WaitStopContext
 
 	client   *clientv3.Client
 	kvClient clientv3.KV
@@ -19,8 +22,10 @@ type StorageEtcd struct {
 	idLock sync.Mutex
 }
 
-func NewDBEtcd(config global.DBConfig) (*StorageEtcd, error) {
-	db := &StorageEtcd{}
+func NewDBEtcd(config global.DBConfig, ctx *context2.WaitStopContext) (*StorageEtcd, error) {
+	db := &StorageEtcd{
+		ctx: ctx,
+	}
 	err := db.init(config.Endpoints)
 
 	return db, err
@@ -36,6 +41,18 @@ func (s *StorageEtcd) init(endpoints []string) (err error) {
 	}
 
 	s.kvClient = clientv3.NewKV(s.client)
+	go func() {
+		select {
+		case <-s.ctx.Done():
+			err := s.Close()
+			if err != nil {
+				logrus.Errorf("etcd shutdown with error: %v", err)
+			} else {
+				logrus.Info("etcd connection shutdown")
+			}
+		}
+		s.ctx.Finish()
+	}()
 	return
 }
 

@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"github.com/go-sql-driver/mysql"
+	"github.com/profzone/eden-framework/pkg/context"
+	"github.com/sirupsen/logrus"
 	"longhorn/proxy/internal/global"
 	"sync"
 
@@ -12,10 +14,14 @@ import (
 type StorageMysql struct {
 	sync.Mutex
 	db *sql.DB
+
+	ctx *context.WaitStopContext
 }
 
-func NewDBMysql(config global.DBConfig) (*StorageMysql, error) {
-	db := &StorageMysql{}
+func NewDBMysql(config global.DBConfig, ctx *context.WaitStopContext) (*StorageMysql, error) {
+	db := &StorageMysql{
+		ctx: ctx,
+	}
 	err := db.init(config)
 	return db, err
 }
@@ -29,7 +35,22 @@ func (s *StorageMysql) init(config global.DBConfig) error {
 
 	var err error
 	s.db, err = sql.Open("mysql", conf.FormatDSN())
-	return err
+	if err != nil {
+		return err
+	}
+	go func() {
+		select {
+		case <-s.ctx.Done():
+			err := s.Close()
+			if err != nil {
+				logrus.Errorf("mysql shutdown with error: %v", err)
+			} else {
+				logrus.Info("mysql connection shutdown")
+			}
+		}
+		s.ctx.Finish()
+	}()
+	return nil
 }
 
 func (s *StorageMysql) Close() error {

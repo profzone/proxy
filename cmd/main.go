@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/profzone/eden-framework/pkg/application"
-	"github.com/sirupsen/logrus"
+	"github.com/profzone/eden-framework/pkg/context"
 	"longhorn/proxy/internal/gateway"
 	"longhorn/proxy/internal/global"
 	"longhorn/proxy/internal/storage"
@@ -11,25 +11,14 @@ import (
 func main() {
 	app := application.NewApplication(runner, &global.Config)
 	go app.Start()
-	app.WaitStop(func() error {
-		err := storage.Database.Close()
-		if err != nil {
-			return err
-		}
-		logrus.Infof("database shutdown.")
-
-		err = gateway.APIServer.Close()
-		if err != nil {
-			return err
-		}
-		logrus.Infof("api server shutdown.")
-
+	app.WaitStop(func(ctx *context.WaitStopContext) error {
+		ctx.Cancel()
 		return nil
 	})
 }
 
 func runner(app *application.Application) error {
-	storage.Database.Init(global.Config.DBConfig)
+	storage.Database.Init(global.Config.DBConfig, app.Context())
 
 	// start gateway server
 	gateway.APIServer = gateway.CreateReverseProxy(gateway.ReverseProxyConf{
@@ -39,6 +28,6 @@ func runner(app *application.Application) error {
 		WriteTimeout:    global.Config.WriteTimeout,
 		ReadBufferSize:  global.Config.ReadBufferSize,
 		WriteBufferSize: global.Config.WriteBufferSize,
-	})
+	}, app.Context())
 	return gateway.APIServer.Start()
 }
