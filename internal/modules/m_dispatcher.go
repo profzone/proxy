@@ -1,8 +1,6 @@
 package modules
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"github.com/jinzhu/copier"
 	"github.com/patrickmn/go-cache"
@@ -16,46 +14,44 @@ import (
 	"time"
 )
 
-type BreakerConf struct {
-	// Half-open状态下最多能进入的请求数量
-	MaxRequests uint32 `json:"maxRequests"`
-	// Close状态下重置内部统计的时间
-	Interval timelib.DurationString `json:"interval"`
-	// Open状态下变更为Half-open状态的时间
-	Timeout timelib.DurationString `json:"timeout"`
-}
-
 type Dispatcher struct {
 	// 路由
 	Router *Router `json:"router,omitempty" default:""`
 	// 熔断器
-	BreakerConf *BreakerConf `json:"breaker,omitempty" default:""`
-	breaker     *gobreaker.CircuitBreaker
+	breaker *gobreaker.CircuitBreaker
 
 	WriteTimeout timelib.DurationString `json:"writeTimeout" default:""`
 	ReadTimeout  timelib.DurationString `json:"readTimeout" default:""`
 	ClusterID    uint64                 `json:"clusterID,string"`
 }
 
-func (d *Dispatcher) GobDecode(data []byte) error {
-	dec := gob.NewDecoder(bytes.NewReader(data))
-	err := dec.Decode(d)
-	if err != nil {
-		return err
-	}
-
-	if d.BreakerConf != nil {
-		d.breaker = gobreaker.NewCircuitBreaker(gobreaker.Settings{
+func NewDispatcher(model *models.Dispatcher) *Dispatcher {
+	var breaker *gobreaker.CircuitBreaker
+	if model.BreakerConf != nil {
+		breaker = gobreaker.NewCircuitBreaker(gobreaker.Settings{
 			Name:          "",
-			MaxRequests:   d.BreakerConf.MaxRequests,
-			Interval:      time.Duration(d.BreakerConf.Interval),
-			Timeout:       time.Duration(d.BreakerConf.Timeout),
+			MaxRequests:   model.BreakerConf.MaxRequests,
+			Interval:      time.Duration(model.BreakerConf.Interval),
+			Timeout:       time.Duration(model.BreakerConf.Timeout),
 			ReadyToTrip:   BreakerStrategyTotalFailures,
-			OnStateChange: d.breakerStateChanged,
+			OnStateChange: breakerStateChanged,
 		})
 	}
+	var router *Router
+	if model.Router != nil {
+		router = NewRouter(model.Router)
+	}
+	return &Dispatcher{
+		Router:       router,
+		breaker:      breaker,
+		WriteTimeout: model.WriteTimeout,
+		ReadTimeout:  model.ReadTimeout,
+		ClusterID:    model.ClusterID,
+	}
+}
 
-	return nil
+func breakerStateChanged(name string, from gobreaker.State, to gobreaker.State) {
+
 }
 
 func (d *Dispatcher) breakerStateChanged(name string, from gobreaker.State, to gobreaker.State) {

@@ -1,14 +1,11 @@
 package modules
 
 import (
-	"bytes"
-	"encoding/gob"
 	"github.com/juju/ratelimit"
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 	"longhorn/proxy/internal/constants/enum"
-	"longhorn/proxy/internal/global"
-	"longhorn/proxy/internal/storage"
+	"longhorn/proxy/internal/models"
 	"time"
 )
 
@@ -24,15 +21,45 @@ type API struct {
 	// 接口状态
 	Status enum.ApiStatus `json:"status" default:"UP"`
 	// IP黑白名单 format: <blacklist(>ip[,]...<)whitelist(>ip[,]...<)>
-	IPControl    string `json:"ipControl,omitempty" default:""`
 	ipController *IPController
 	// 最大QPS
-	MaxQPS  int64 `json:"maxQPS,omitempty" default:""`
 	limiter *ratelimit.Bucket
 	// TODO Validations
 	// 反向代理调度
-	Dispatchers []Dispatcher `json:"dispatcher"`
+	Dispatchers []*Dispatcher `json:"dispatcher"`
 	// TODO Fusion
+}
+
+func NewAPI(model *models.API) (*API, error) {
+	var dispatchers = make([]*Dispatcher, 0)
+	var ipController *IPController
+	var limiter *ratelimit.Bucket
+	var err error
+	for _, d := range model.Dispatchers {
+		dispatcher := NewDispatcher(&d)
+		dispatchers = append(dispatchers, dispatcher)
+	}
+
+	if model.IPControl != "" {
+		ipController, err = newIPController(model.IPControl)
+		if err != nil {
+			logrus.Errorf("[NewAPI] newIPController err: %v", err)
+			return nil, err
+		}
+	}
+	if model.MaxQPS > 0 {
+		limiter = ratelimit.NewBucket(time.Second/time.Duration(model.MaxQPS), model.MaxQPS)
+	}
+	return &API{
+		ID:           model.ID,
+		Name:         model.Name,
+		URLPattern:   model.URLPattern,
+		Method:       model.Method,
+		Status:       model.Status,
+		ipController: ipController,
+		limiter:      limiter,
+		Dispatchers:  dispatchers,
+	}, nil
 }
 
 func (v *API) SetIdentity(id uint64) {
@@ -43,36 +70,9 @@ func (v API) GetIdentity() uint64 {
 	return v.ID
 }
 
-func (v API) Marshal() (result []byte, err error) {
-	buf := bytes.NewBuffer(result)
-	enc := gob.NewEncoder(buf)
-	err = enc.Encode(v)
-	return buf.Bytes(), err
-}
-
-func (v *API) Unmarshal(data []byte) (err error) {
-	buf := bytes.NewBuffer(data)
-	dec := gob.NewDecoder(buf)
-	err = dec.Decode(v)
-	if err != nil {
-		return
-	}
-
-	if v.IPControl != "" {
-		v.ipController, err = newIPController(v.IPControl)
-		if err != nil {
-			return
-		}
-	}
-	if v.MaxQPS > 0 {
-		v.limiter = ratelimit.NewBucket(time.Second/time.Duration(v.MaxQPS), v.MaxQPS)
-	}
-	return
-}
-
 func (v *API) WalkDispatcher(walking func(dispatcher *Dispatcher) error) {
 	for _, d := range v.Dispatchers {
-		err := walking(&d)
+		err := walking(d)
 		if err != nil {
 			// TODO change error display
 			logrus.Error(err)
@@ -92,11 +92,4 @@ func (v *API) FilterQPS() bool {
 		return false
 	}
 	return true
-}
-
-func WalkAPIs(start uint64, limit int64, walking func(e storage.Element) error, db storage.Storage) (nextID uint64, err error) {
-	nextID, err = db.Walk(global.Config.ApiPrefix, nil, "id", start, limit, func() storage.Element {
-		return &API{}
-	}, walking)
-	return
 }

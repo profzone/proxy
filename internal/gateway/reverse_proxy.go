@@ -78,9 +78,13 @@ func (s *ReverseProxy) Close() error {
 }
 
 func (s *ReverseProxy) initRoutes() error {
-	_, err := modules.WalkAPIs(0, -1, func(e storage.Element) error {
-		a := e.(*modules.API)
-		err := s.routes.Handle(a.Method, a.URLPattern, a.ID)
+	_, err := models.WalkAPIs(0, -1, func(e storage.Element) error {
+		model := e.(*models.API)
+		a, err := modules.NewAPI(model)
+		if err != nil {
+			return err
+		}
+		err = s.routes.Handle(a.Method, a.URLPattern, a.ID)
 		if err != nil {
 			return err
 		}

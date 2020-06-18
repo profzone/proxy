@@ -67,15 +67,15 @@ func NewDatabaseServer(model *models.DatabaseServer) *DatabaseServer {
 
 type Server struct {
 	// 唯一标识
-	ID uint64 `json:"id,string" default:""`
+	ID uint64
 	// 服务器名称
-	Name string `json:"name"`
+	Name string
 	// 地址
-	Host string `json:"host"`
+	Host string
 	// 端口
-	Port uint16 `json:"port"`
+	Port uint16
 	// 服务器类型
-	ServerType enum.ServerType `json:"serverType"`
+	ServerType enum.ServerType
 }
 
 func (v *Server) SetIdentity(id uint64) {
@@ -102,9 +102,9 @@ type DatabaseServer struct {
 	Server
 
 	// 数据库用户名
-	UserName string `json:"userName"`
+	UserName string
 	// 数据库密码
-	Password string `json:"password"`
+	Password string
 	// 数据库配置扩展
-	Extends map[string]string `json:"extends"`
+	Extends map[string]string
 }

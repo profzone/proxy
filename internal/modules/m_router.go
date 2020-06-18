@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"github.com/valyala/fasthttp"
+	"longhorn/proxy/internal/models"
 	"longhorn/proxy/pkg/route"
 )
 
@@ -17,6 +18,16 @@ type Router struct {
 	// 重写到特定集群
 	ClusterID  uint64 `json:"clusterID,string" default:""`
 	conditions *routerCondition
+}
+
+func NewRouter(model *models.Router) *Router {
+	return &Router{
+		ID:             model.ID,
+		Condition:      model.Condition,
+		RewritePattern: model.RewritePattern,
+		ClusterID:      model.ClusterID,
+		conditions:     newRouterCondition(model.Condition),
+	}
 }
 
 func (r *Router) GobDecode(data []byte) error {

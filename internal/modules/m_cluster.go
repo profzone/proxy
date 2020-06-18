@@ -11,13 +11,13 @@ import (
 
 type Cluster struct {
 	// 唯一标识
-	ID uint64 `json:"id,string" default:""`
+	ID uint64
 	// 集群名称
-	Name string `json:"name"`
+	Name string
 	// 负载均衡类型
-	LoadBalanceType enum.LoadBalanceType `json:"loadBalanceType"`
+	LoadBalanceType enum.LoadBalanceType
 	// 负载均衡器
-	loadBalancer LoadBalancer
+	loadBalance LoadBalance
 
 	// 绑定的server列表
 	servers []ServerContract
@@ -33,7 +33,7 @@ func NewCluster(model *models.Cluster) *Cluster {
 
 	switch model.LoadBalanceType {
 	case enum.LOAD_BALANCE_TYPE__ROUND_ROBIN:
-		c.loadBalancer = NewRoundRobin()
+		c.loadBalance = NewRoundRobin()
 	default:
 	}
 	return c
@@ -76,5 +76,5 @@ func (v *Cluster) AddServer(s ServerContract) {
 }
 
 func (v *Cluster) ApplyLoadBalance(req fasthttp.Request) ServerContract {
-	return v.loadBalancer.Apply(req, v.servers)
+	return v.loadBalance.Apply(req, v.servers)
 }

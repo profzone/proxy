@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 )
 
-type LoadBalancer interface {
+type LoadBalance interface {
 	Apply(req fasthttp.Request, servers []ServerContract) ServerContract
 }
 
@@ -15,7 +15,7 @@ type RoundRobin struct {
 }
 
 // NewRoundRobin create a RoundRobin
-func NewRoundRobin() LoadBalancer {
+func NewRoundRobin() LoadBalance {
 	var ops uint64
 	ops = 0
 
